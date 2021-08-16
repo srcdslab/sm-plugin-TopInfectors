@@ -1,0 +1,548 @@
+#include <sourcemod>
+#include <sdktools>
+#include <sdkhooks>
+#include <zombiereloaded>
+#include <multicolors>
+#include <clientprefs>
+
+#include "loghelper.inc"
+#include "utilshelper.inc"
+
+#pragma semicolon 1
+#pragma newdecls required
+
+enum WeaponAmmoGrenadeType
+{
+    GrenadeType_Invalid             = -1,   /** Invalid grenade slot. */
+    GrenadeType_HEGrenade           = 11,   /** CSS - HEGrenade slot */
+    GrenadeType_Flashbang           = 12,   /** CSS - Flashbang slot. */
+    GrenadeType_Smokegrenade        = 13,   /** CSS - Smokegrenade slot. */
+    GrenadeType_HEGrenadeCSGO       = 14,   /** CSGO - HEGrenade slot. */
+    GrenadeType_FlashbangCSGO       = 15,   /** CSGO - Flashbang slot. */
+    GrenadeType_SmokegrenadeCSGO    = 16,   /** CSGO - Smokegrenade slot. */
+    GrenadeType_Incendiary          = 17,   /** CSGO - Incendiary and Molotov slot. */
+    GrenadeType_Decoy               = 18,   /** CSGO - Decoy slot. */
+    GrenadeType_Tactical            = 22,   /** CSGO - Tactical slot. */
+}
+
+#define SKULL_MODEL_CSGO	"models/topdefenders_perk/skull_v2.mdl"
+#define SKULL_MODEL_CSS		"models/unloze/skull_v3.mdl"
+
+int g_iEntIndex[MAXPLAYERS + 1] = -1;
+
+int g_iSkullEntity = -1;
+
+int g_iInfectCount[MAXPLAYERS + 1] = { 0, ... };
+int g_iTopInfector[MAXPLAYERS + 1] = { -1, ... };
+
+int g_iPrintColor[3];
+float g_fPrintPos[2];
+
+ConVar g_cvAmount, g_cvNades, g_cvPrint, g_cvPrintPos, g_cvPrintColor;
+
+Handle g_hHudSync = INVALID_HANDLE;
+
+bool g_bHideSkull[MAXPLAYERS+1] = { false, ... };
+Handle g_hCookie_HideSkull;
+
+bool g_bIsCSGO = false;
+
+public Plugin myinfo = 
+{
+	name 			= 		"Top Infectors",
+	author 			=		"Nano, maxime1907",
+	description 	= 		"Show top infectors after each round",
+	version 		= 		"1.0",
+}
+
+public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
+{
+	g_bIsCSGO = (GetEngineVersion() == Engine_CSGO);
+	CreateNative("TopInfectors_IsTopInfector", Native_IsTopInfector);
+	RegPluginLibrary("TopInfectors");
+	return APLRes_Success;
+}
+
+public void OnPluginStart()
+{
+	LoadTranslations("topinfectors.phrases");
+
+	g_cvAmount = CreateConVar("sm_topinfectors_players", "3", "Amount of players on the top infectors table", _, true, 0.0, true, 5.0);
+	g_cvNades = CreateConVar("sm_topinfectors_nades", "1", "How much nades are given to top infectors", _, true, 0.0, true, 10.0);
+	g_cvPrint = CreateConVar("sm_topinfectors_print", "0", "2 - Display in hud, 1 - In chat, 0 - Both", _, true, 0.0, true, 2.0);
+	g_cvPrintPos = CreateConVar("sm_topinfectors_print_position", "0.02 0.42", "The X and Y position for the hud.");
+	g_cvPrintColor = CreateConVar("sm_topinfectors_print_color", "255 0 0", "RGB color value for the hud.");
+
+	g_cvPrint.AddChangeHook(OnConVarChange);
+	g_cvPrintPos.AddChangeHook(OnConVarChange);
+	g_cvPrintColor.AddChangeHook(OnConVarChange);
+
+	g_hCookie_HideSkull  = RegClientCookie("topinfectors_hide_skull",  "", CookieAccess_Private);
+
+	SetCookieMenuItem(CookieMenu_TopInfectors, INVALID_HANDLE, "TopInfectors Settings");
+
+	RegConsoleCmd("sm_toggleskull", Command_ToggleSkull);
+
+	AutoExecConfig(true);
+	GetConVars();
+
+	HookEvent("round_start", Event_OnRoundStart);
+	HookEvent("round_end", Event_OnRoundEnd);
+	HookEvent("player_spawn", Event_OnPlayerSpawn);
+	HookEvent("player_death", Event_OnClientDeath);
+
+	g_hHudSync = CreateHudSynchronizer();
+}
+
+public void OnPluginEnd()
+{
+	Cleanup(true);
+}
+
+public void OnConVarChange(ConVar convar, char[] oldValue, char[] newValue)
+{
+	GetConVars();
+}
+
+public void OnMapStart()
+{
+	if (g_bIsCSGO)
+		PrecacheModel(SKULL_MODEL_CSGO);
+	else
+	{
+		PrecacheModel(SKULL_MODEL_CSS);
+
+		AddFileToDownloadsTable(SKULL_MODEL_CSS);
+		AddFileToDownloadsTable("models/unloze/skull_v3.phy");
+		AddFileToDownloadsTable("models/unloze/skull_v3.vvd");
+		AddFileToDownloadsTable("models/unloze/skull_v3.sw.vtx");
+		AddFileToDownloadsTable("models/unloze/skull_v3.dx80.vtx");
+		AddFileToDownloadsTable("models/unloze/skull_v3.dx90.vtx");
+		AddFileToDownloadsTable("materials/models/unloze/skull/skull.vmt");
+		AddFileToDownloadsTable("materials/models/unloze/skull/skull.vtf");
+		AddFileToDownloadsTable("materials/models/unloze/skull/skull_bump.vtf");
+		AddFileToDownloadsTable("materials/models/unloze/skull/skull_horn_b.vmt");
+		AddFileToDownloadsTable("materials/models/unloze/skull/skull_horn_b.vtf");
+		AddFileToDownloadsTable("materials/models/unloze/skull/skull_horn_b_bump.vtf");
+	}
+}
+
+public void OnClientPutInServer(int client)
+{
+	if (AreClientCookiesCached(client))
+	{
+		GetCookies(client);
+	}
+}
+
+public void GetCookies(int client)
+{
+	char sBuffer[4];
+	GetClientCookie(client, g_hCookie_HideSkull, sBuffer, sizeof(sBuffer));
+
+	if (sBuffer[0])
+		g_bHideSkull[client] = true;
+	else
+		g_bHideSkull[client] = false;
+}
+
+public void OnClientCookiesCached(int client)
+{
+	GetCookies(client);
+}
+
+public void OnClientDisconnect(int client)
+{
+	SetClientCookie(client, g_hCookie_HideSkull, g_bHideSkull[client] ? "1" : "");
+
+	g_bHideSkull[client] = false;
+	g_iTopInfector[client] = -1;
+	g_iInfectCount[client] = 0;
+}
+
+public Action Command_ToggleSkull(int client, int argc)
+{
+	ToggleSkull(client);
+	return Plugin_Handled;
+}
+
+//---------------------------------------
+// Purpose: Hooks
+//---------------------------------------
+
+public Action ZR_OnClientInfect(int &client, int &attacker, bool &motherInfect, bool &respawnOverride, bool &respawn) 
+{
+	if (!IsValidZombie(attacker))
+	{
+		return Plugin_Continue;
+	}
+
+	g_iInfectCount[attacker]++;
+	return Plugin_Continue;
+}
+
+public void Event_OnClientDeath(Event hEvent, const char[] sEvent, bool bDontBroadcast)
+{
+	int client = GetClientOfUserId(hEvent.GetInt("userid"));
+
+	for (int i = 1; i <= MaxClients; i++)
+	{
+		if (i != client)
+			continue;
+
+		if (g_iTopInfector[i] == 0 && !IsPlayerAlive(i))
+			RemoveHat_CSS(i);
+
+		break;
+	}
+}
+
+public void Event_OnRoundStart(Event event, char[] name, bool dontBroadcast) 
+{
+	Cleanup();
+}
+
+public void Event_OnPlayerSpawn(Event event, const char[] name, bool dontbroadcast) 
+{
+	int client = GetClientOfUserId(event.GetInt("userid"));
+
+	if (!IsValidClient(client) || !IsPlayerAlive(client) || !ZR_IsClientHuman(client) || g_iTopInfector[client] <= -1)
+		return;
+
+	CreateTimer(7.0, Timer_OnClientSpawnPost, client, TIMER_FLAG_NO_MAPCHANGE);
+}
+
+public void Event_OnRoundEnd(Event event, char[] name, bool dontBroadcast) 
+{
+	Cleanup(_, true);
+
+	int iSortedList[MAXPLAYERS+1][2];
+	int iSortedCount = 0;
+
+	for (int client = 1; client <= MaxClients; client++)
+	{
+		if (!IsClientInGame(client) || !g_iInfectCount[client])
+			continue;
+
+		iSortedList[iSortedCount][0] = client;
+		iSortedList[iSortedCount][1] = g_iInfectCount[client];
+		iSortedCount++;
+	}
+
+	SortCustom2D(iSortedList, iSortedCount, SortInfectorsList);
+
+	for (int rank = 0; rank < iSortedCount; rank++)
+	{
+		LogMessage("%d - %L (%d)", rank + 1, iSortedList[rank][0], iSortedList[rank][1]);
+	}
+
+	if (!iSortedCount)
+		return;
+
+	char sBuffer[512];
+	Format(sBuffer, sizeof(sBuffer), "TOP INFECTORS:");
+	Format(sBuffer, sizeof(sBuffer), "%s\n*************************", sBuffer);
+
+	for (int i = 0; i < g_cvAmount.IntValue; i++)
+	{
+		if (iSortedList[i][0])
+		{
+			g_iTopInfector[iSortedList[i][0]] = i;
+			Format(sBuffer, sizeof(sBuffer), "%s\n%d. %N - %d INFECTED", sBuffer, i + 1, iSortedList[i][0], iSortedList[i][1]);
+			LogPlayerEvent(iSortedList[i][0], "triggered", i == 0 ? "top_infector" : (i == 1 ? "second_infector" : (i == 2 ? "third_infector" : "super_infector")));
+		}
+	}
+
+	Format(sBuffer, sizeof(sBuffer), "%s\n*************************", sBuffer);
+
+	if (g_cvPrint.IntValue <= 0 || g_cvPrint.IntValue == 1)
+		PrintToChatAll(sBuffer);
+
+	if (g_cvPrint.IntValue <= 0 || g_cvPrint.IntValue == 2)
+	{
+		SetHudTextParams(g_fPrintPos[0], g_fPrintPos[1], 5.0, g_iPrintColor[0], g_iPrintColor[1], g_iPrintColor[2], 255, 0, 0.0, 0.1, 0.1);
+
+		for (int client = 1; client <= MaxClients; client++)
+		{
+			if (!IsValidClient(client))
+				continue;
+
+			ClearSyncHud(client, g_hHudSync);
+			ShowSyncHudText(client, g_hHudSync, "%s", sBuffer);
+		}
+	}
+}
+
+//---------------------------------------
+// Purpose: Timers
+//---------------------------------------
+
+public Action Timer_OnClientSpawnPost(Handle timer, any client)
+{
+	if (!IsValidClient(client) || !IsPlayerAlive(client) || g_iTopInfector[client] <= -1 || !ZR_IsClientHuman(client))
+		return;
+
+	GiveGrenadesToClient(client, g_cvNades.IntValue, g_bIsCSGO ? GrenadeType_HEGrenadeCSGO : GrenadeType_HEGrenade);
+
+	if (g_iTopInfector[client] != 0 || g_bHideSkull[client])
+		return;
+
+	if (g_bIsCSGO)
+		CreateHat_CSGO(client);
+	else
+		CreateHat_CSS(client);
+}
+
+//---------------------------------------
+// Purpose: Menus
+//---------------------------------------
+
+public void CookieMenu_TopInfectors(int client, CookieMenuAction action, any info, char[] buffer, int maxlen)
+{
+	switch(action)
+	{
+		case(CookieMenuAction_DisplayOption):
+		{
+			Format(buffer, maxlen, "%T", "Cookie Menu", client);
+		}
+		case(CookieMenuAction_SelectOption):
+		{
+			ShowSettingsMenu(client);
+		}
+	}
+}
+
+public void ShowSettingsMenu(int client)
+{
+	Menu menu = new Menu(MenuHandler_MainMenu, MENU_ACTIONS_DEFAULT | MenuAction_DisplayItem);
+
+	menu.SetTitle("%T", "Cookie Menu Title", client);
+
+	AddMenuItemTranslated(menu, "0", "%t: %t", "Skull", g_bHideSkull[client]  ? "Disabled" : "Enabled");
+
+	menu.ExitBackButton = true;
+	menu.ExitButton = true;
+
+	menu.Display(client, MENU_TIME_FOREVER);
+}
+
+public int MenuHandler_MainMenu(Menu menu, MenuAction action, int client, int selection)
+{
+	switch (action)
+	{
+		case (MenuAction_Select):
+		{
+			switch (selection)
+			{
+				case (0): ToggleSkull(client);
+			}
+
+			ShowSettingsMenu(client);
+		}
+		case (MenuAction_Cancel):
+		{
+			ShowCookieMenu(client);
+		}
+		case (MenuAction_End):
+		{
+			delete menu;
+		}
+	}
+}
+
+//---------------------------------------
+// Purpose: Functions
+//---------------------------------------
+
+stock void Cleanup(bool bPluginEnd = false, bool bRoundEnd = false)
+{
+	for (int client = 1; client <= MaxClients; client++)
+	{
+		if (bRoundEnd)
+			g_iTopInfector[client] = -1;
+		else
+			g_iInfectCount[client] = 0;
+	}
+
+	if (bPluginEnd)
+	{
+		UnhookEvent("round_start", Event_OnRoundStart);
+		UnhookEvent("round_end", Event_OnRoundEnd);
+		UnhookEvent("player_spawn", Event_OnPlayerSpawn);
+		UnhookEvent("player_death", Event_OnClientDeath);
+
+		if (g_hHudSync != INVALID_HANDLE)
+		{
+			CloseHandle(g_hHudSync);
+			g_hHudSync = INVALID_HANDLE;
+		}
+
+		for (int i = 1; i <= MaxClients; i++)
+		{
+			if (IsClientConnected(i))
+				OnClientDisconnect(i);
+		}
+	}
+}
+
+stock void ToggleSkull(int client)
+{
+	g_bHideSkull[client] = !g_bHideSkull[client];
+	if (g_bHideSkull[client] && IsValidClient(client) && IsPlayerAlive(client) && g_iTopInfector[client] == 0)
+	{
+		if (!g_bIsCSGO)
+			RemoveHat_CSS(client);
+	}
+	else if (!g_bHideSkull[client] && IsValidClient(client) && IsPlayerAlive(client) && g_iTopInfector[client] == 0)
+	{
+		if (g_bIsCSGO)
+			CreateHat_CSGO(client);
+		else
+			CreateHat_CSS(client);
+	}
+	CPrintToChat(client, "{cyan}%t {white}%t", "Chat Prefix", g_bHideSkull[client] ? "Skull Disabled" : "Skull Enabled");
+}
+
+stock void RemoveHat_CSS(int client)
+{
+	if (!g_bIsCSGO && g_iSkullEntity != INVALID_ENT_REFERENCE)
+	{
+		int iCrownEntity = EntRefToEntIndex(g_iSkullEntity);
+		if(IsValidEntity(iCrownEntity))
+			AcceptEntityInput(iCrownEntity, "Kill");
+		g_iSkullEntity = INVALID_ENT_REFERENCE;
+	}
+}
+
+void CreateHat_CSS(int client) 
+{ 
+	if ((g_iSkullEntity = EntIndexToEntRef(CreateEntityByName("prop_dynamic"))) == INVALID_ENT_REFERENCE)
+		return;
+	
+	int iCrownEntity = EntRefToEntIndex(g_iSkullEntity);
+	SetEntityModel(iCrownEntity, SKULL_MODEL_CSS);
+
+	DispatchKeyValue(iCrownEntity, "solid",                 "0");
+	DispatchKeyValue(iCrownEntity, "modelscale",            "1.3");
+	DispatchKeyValue(iCrownEntity, "disableshadows",        "1");
+	DispatchKeyValue(iCrownEntity, "disablereceiveshadows", "1");
+	DispatchKeyValue(iCrownEntity, "disablebonefollowers",  "1");
+
+	float fVector[3];
+	float fAngles[3];
+	GetClientAbsOrigin(client, fVector);
+	GetClientAbsAngles(client, fAngles);
+
+	fVector[2] += 80.0;
+	fAngles[0] = 8.0;
+	fAngles[2] = 5.5;
+
+	TeleportEntity(iCrownEntity, fVector, fAngles, NULL_VECTOR);
+
+	float fDirection[3];
+	fDirection[0] = 0.0;
+	fDirection[1] = 0.0;
+	fDirection[2] = 1.0;
+
+	TE_SetupSparks(fVector, fDirection, 1000, 200);
+	TE_SendToAll();
+
+	SetVariantString("!activator");
+	AcceptEntityInput(iCrownEntity, "SetParent", client);
+}
+
+void CreateHat_CSGO(int client) 
+{ 
+	int m_iEnt = CreateEntityByName("prop_dynamic_override"); 
+	DispatchKeyValue(m_iEnt, "model", SKULL_MODEL_CSGO); 
+	DispatchKeyValue(m_iEnt, "spawnflags", "256"); 
+	DispatchKeyValue(m_iEnt, "solid", "0");
+	DispatchKeyValue(m_iEnt, "modelscale", "1.3");
+	SetEntPropEnt(m_iEnt, Prop_Send, "m_hOwnerEntity", client); 
+
+	float m_flPosition[3];
+	float m_flAngles[3], m_flForward[3], m_flRight[3], m_flUp[3];
+	GetClientAbsAngles(client, m_flAngles);
+	GetAngleVectors(m_flAngles, m_flForward, m_flRight, m_flUp);
+	GetClientEyePosition(client, m_flPosition);
+	m_flPosition[2] += 7.0;
+
+	DispatchSpawn(m_iEnt); 
+	AcceptEntityInput(m_iEnt, "TurnOn", m_iEnt, m_iEnt, 0); 
+
+	g_iEntIndex[client] = m_iEnt; 
+
+	TeleportEntity(m_iEnt, m_flPosition, m_flAngles, NULL_VECTOR); 
+
+	SetVariantString("!activator"); 
+	AcceptEntityInput(m_iEnt, "SetParent", client, m_iEnt, 0); 
+
+	SetVariantString(SKULL_MODEL_CSGO); 
+	AcceptEntityInput(m_iEnt, "SetParentAttachmentMaintainOffset", m_iEnt, m_iEnt, 0);
+
+	float fVector[3];
+	GetClientAbsOrigin(client, fVector);
+
+	fVector[2] += 80.0;
+
+	float fDirection[3];
+	fDirection[0] = 0.0;
+	fDirection[1] = 0.0;
+	fDirection[2] = 1.0;
+
+	TE_SetupSparks(fVector, fDirection, 1000, 200);
+	TE_SendToAll();
+}
+
+stock void GiveGrenadesToClient(int client, int iAmount, WeaponAmmoGrenadeType type)
+{
+	int iToolsAmmo = FindSendPropInfo("CBasePlayer", "m_iAmmo");
+	if (iToolsAmmo != -1)
+	{
+		int iGrenadeCount = GetEntData(client, iToolsAmmo + (view_as<int>(type) * 4));
+		SetEntData(client, iToolsAmmo + (view_as<int>(type) * 4), iGrenadeCount + iAmount, _, true);
+	}
+}
+
+public void GetConVars()
+{
+	char StringPos[2][8];
+	char ColorValue[64];
+	char PosValue[16];
+
+	g_cvPrintPos.GetString(PosValue, sizeof(PosValue));
+	ExplodeString(PosValue, " ", StringPos, sizeof(StringPos), sizeof(StringPos[]));
+
+	g_fPrintPos[0] = StringToFloat(StringPos[0]);
+	g_fPrintPos[1] = StringToFloat(StringPos[1]);
+
+	g_cvPrintColor.GetString(ColorValue, sizeof(ColorValue));
+	ColorStringToArray(ColorValue, g_iPrintColor);
+}
+
+public int SortInfectorsList(int[] elem1, int[] elem2, const int[][] array, Handle hndl)
+{
+	if (elem1[1] > elem2[1]) return -1;
+	if (elem1[1] < elem2[1]) return 1;
+
+	return 0;
+}
+
+bool IsValidZombie(int attacker) 
+{
+    return (0 < attacker <= MaxClients && IsValidEntity(attacker) && IsClientInGame(attacker) && IsPlayerAlive(attacker));
+}
+
+//---------------------------------------
+// Purpose: Natives
+//---------------------------------------
+
+public int Native_IsTopInfector(Handle plugin, int numParams)
+{
+	int client = GetNativeCell(1);
+	if (client && IsClientInGame(client))
+	{
+		return g_iTopInfector[client];
+	}
+	return -1;
+}

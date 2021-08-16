@@ -1,0 +1,35 @@
+"Phrases"
+{
+	"Chat Prefix"
+	{
+		"en"    "[TopInfectors]"
+	}
+	"Cookie Menu"
+	{
+		"en"    "Top Infectors"
+	}
+	"Cookie Menu Title"
+	{
+		"en"    "Top Infectors Settings"
+	}
+	"Enabled"
+	{
+		"en"    "Enabled"
+	}
+	"Disabled"
+	{
+		"en"    "Disabled"
+	}
+	"Skull"
+	{
+		"en"    "Skull"
+	}
+	"Skull Enabled"
+	{
+		"en"    "You will now spawn with a skull again"
+	}
+	"Skull Disabled"
+	{
+		"en"    "You will no longer spawn with a skull"
+	}
+}
