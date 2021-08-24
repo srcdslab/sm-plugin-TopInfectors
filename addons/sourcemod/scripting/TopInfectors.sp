@@ -25,6 +25,7 @@ enum WeaponAmmoGrenadeType
     GrenadeType_Tactical            = 22,   /** CSGO - Tactical slot. */
 }
 
+#define BELL_SOUND_COMMON	"nide/bell.wav"
 #define SKULL_MODEL_CSGO	"models/topdefenders_perk/skull_v2.mdl"
 #define SKULL_MODEL_CSS		"models/unloze/skull_v3.mdl"
 
@@ -106,25 +107,14 @@ public void OnConVarChange(ConVar convar, char[] oldValue, char[] newValue)
 
 public void OnMapStart()
 {
+	PrecacheSound(BELL_SOUND_COMMON);
+
 	if (g_bIsCSGO)
 		PrecacheModel(SKULL_MODEL_CSGO);
 	else
-	{
 		PrecacheModel(SKULL_MODEL_CSS);
 
-		AddFileToDownloadsTable(SKULL_MODEL_CSS);
-		AddFileToDownloadsTable("models/unloze/skull_v3.phy");
-		AddFileToDownloadsTable("models/unloze/skull_v3.vvd");
-		AddFileToDownloadsTable("models/unloze/skull_v3.sw.vtx");
-		AddFileToDownloadsTable("models/unloze/skull_v3.dx80.vtx");
-		AddFileToDownloadsTable("models/unloze/skull_v3.dx90.vtx");
-		AddFileToDownloadsTable("materials/models/unloze/skull/skull.vmt");
-		AddFileToDownloadsTable("materials/models/unloze/skull/skull.vtf");
-		AddFileToDownloadsTable("materials/models/unloze/skull/skull_bump.vtf");
-		AddFileToDownloadsTable("materials/models/unloze/skull/skull_horn_b.vmt");
-		AddFileToDownloadsTable("materials/models/unloze/skull/skull_horn_b.vtf");
-		AddFileToDownloadsTable("materials/models/unloze/skull/skull_horn_b_bump.vtf");
-	}
+	AddFilesToDownloadsTable("topinfectors_downloadlist.ini");
 }
 
 public void OnClientPutInServer(int client)
@@ -191,7 +181,12 @@ public void Event_OnClientDeath(Event hEvent, const char[] sEvent, bool bDontBro
 			continue;
 
 		if (g_iTopInfector[i] == 0 && !IsPlayerAlive(i))
-			RemoveHat_CSS(i);
+		{
+			if (!g_bIsCSGO)
+				RemoveHat_CSS(i);
+			else
+				RemoveHat_CSGO(i);
+		}
 
 		break;
 	}
@@ -240,8 +235,7 @@ public void Event_OnRoundEnd(Event event, char[] name, bool dontBroadcast)
 		return;
 
 	char sBuffer[512];
-	Format(sBuffer, sizeof(sBuffer), "TOP INFECTORS:");
-	Format(sBuffer, sizeof(sBuffer), "%s\n*************************", sBuffer);
+	Format(sBuffer, sizeof(sBuffer), "TOP INFECTORS:\n");
 
 	for (int i = 0; i < g_cvAmount.IntValue; i++)
 	{
@@ -252,8 +246,6 @@ public void Event_OnRoundEnd(Event event, char[] name, bool dontBroadcast)
 			LogPlayerEvent(iSortedList[i][0], "triggered", i == 0 ? "top_infector" : (i == 1 ? "second_infector" : (i == 2 ? "third_infector" : "super_infector")));
 		}
 	}
-
-	Format(sBuffer, sizeof(sBuffer), "%s\n*************************", sBuffer);
 
 	if (g_cvPrint.IntValue <= 0 || g_cvPrint.IntValue == 1)
 		PrintToChatAll(sBuffer);
@@ -273,6 +265,63 @@ public void Event_OnRoundEnd(Event event, char[] name, bool dontBroadcast)
 	}
 }
 
+public void SetPerks(int client, char[] notifHudMsg, char[] notifChatMsg)
+{
+	Handle hMessageInfection = StartMessageOne("HudMsg", client);
+	if (hMessageInfection)
+	{
+		if (GetUserMessageType() == UM_Protobuf)
+		{
+			PbSetInt(hMessageInfection, "channel", 50);
+			PbSetInt(hMessageInfection, "effect", 0);
+			PbSetColor(hMessageInfection, "clr1", {255, 255, 255, 255});
+			PbSetColor(hMessageInfection, "clr2", {255, 255, 255, 255});
+			PbSetVector2D(hMessageInfection, "pos", view_as<float>({-1.0, 0.3}));
+			PbSetFloat(hMessageInfection, "fade_in_time", 0.1);
+			PbSetFloat(hMessageInfection, "fade_out_time", 0.1);
+			PbSetFloat(hMessageInfection, "hold_time", 5.0);
+			PbSetFloat(hMessageInfection, "fx_time", 0.0);
+			PbSetString(hMessageInfection, "text", notifHudMsg);
+			EndMessage();
+		}
+		else
+		{
+			BfWriteByte(hMessageInfection, 50);
+			BfWriteFloat(hMessageInfection, -1.0);
+			BfWriteFloat(hMessageInfection, 0.3);
+			BfWriteByte(hMessageInfection, 0);
+			BfWriteByte(hMessageInfection, 255);
+			BfWriteByte(hMessageInfection, 255);
+			BfWriteByte(hMessageInfection, 255);
+			BfWriteByte(hMessageInfection, 255);
+			BfWriteByte(hMessageInfection, 255);
+			BfWriteByte(hMessageInfection, 255);
+			BfWriteByte(hMessageInfection, 255);
+			BfWriteByte(hMessageInfection, 0);
+			BfWriteFloat(hMessageInfection, 0.1);
+			BfWriteFloat(hMessageInfection, 0.1);
+			BfWriteFloat(hMessageInfection, 5.0);
+			BfWriteFloat(hMessageInfection, 0.0);
+			BfWriteString(hMessageInfection, notifHudMsg);
+			EndMessage();
+		}
+	}
+
+	CPrintToChat(client, "{darkblue}%t {grey}%s", "Chat Prefix", notifChatMsg);
+
+	GiveGrenadesToClient(client, g_cvNades.IntValue, g_bIsCSGO ? GrenadeType_HEGrenadeCSGO : GrenadeType_HEGrenade);
+
+	if (g_iTopInfector[client] != 0 || g_bHideSkull[client])
+		return;
+
+	EmitSoundToClient(client, BELL_SOUND_COMMON, .volume=1.0);
+
+	if (g_bIsCSGO)
+		CreateHat_CSGO(client);
+	else
+		CreateHat_CSS(client);
+}
+
 //---------------------------------------
 // Purpose: Timers
 //---------------------------------------
@@ -282,15 +331,11 @@ public Action Timer_OnClientSpawnPost(Handle timer, any client)
 	if (!IsValidClient(client) || !IsPlayerAlive(client) || g_iTopInfector[client] <= -1 || !ZR_IsClientHuman(client))
 		return;
 
-	GiveGrenadesToClient(client, g_cvNades.IntValue, g_bIsCSGO ? GrenadeType_HEGrenadeCSGO : GrenadeType_HEGrenade);
-
-	if (g_iTopInfector[client] != 0 || g_bHideSkull[client])
-		return;
-
-	if (g_bIsCSGO)
-		CreateHat_CSGO(client);
-	else
-		CreateHat_CSS(client);
+	SetPerks(
+		client,
+		"You have been rewarded grenades\nsince you were the Top Infector last round!",
+		"You have been rewarded grenades since you were the Top Infector last round!"
+	);
 }
 
 //---------------------------------------
@@ -392,6 +437,8 @@ stock void ToggleSkull(int client)
 	{
 		if (!g_bIsCSGO)
 			RemoveHat_CSS(client);
+		else
+			RemoveHat_CSGO(client);
 	}
 	else if (!g_bHideSkull[client] && IsValidClient(client) && IsPlayerAlive(client) && g_iTopInfector[client] == 0)
 	{
@@ -400,7 +447,7 @@ stock void ToggleSkull(int client)
 		else
 			CreateHat_CSS(client);
 	}
-	CPrintToChat(client, "{cyan}%t {white}%t", "Chat Prefix", g_bHideSkull[client] ? "Skull Disabled" : "Skull Enabled");
+	CPrintToChat(client, "{darkblue}%t {grey}%t", "Chat Prefix", g_bHideSkull[client] ? "Skull Disabled" : "Skull Enabled");
 }
 
 stock void RemoveHat_CSS(int client)
@@ -412,6 +459,11 @@ stock void RemoveHat_CSS(int client)
 			AcceptEntityInput(iCrownEntity, "Kill");
 		g_iSkullEntity = INVALID_ENT_REFERENCE;
 	}
+}
+
+stock void RemoveHat_CSGO(int client)
+{
+	RemoveHat_CSS(client);
 }
 
 void CreateHat_CSS(int client) 
