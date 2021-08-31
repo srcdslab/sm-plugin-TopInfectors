@@ -235,7 +235,7 @@ public void Event_OnRoundEnd(Event event, char[] name, bool dontBroadcast)
 		return;
 
 	char sBuffer[512];
-	Format(sBuffer, sizeof(sBuffer), "TOP INFECTORS:\n");
+	Format(sBuffer, sizeof(sBuffer), "TOP INFECTORS:");
 
 	for (int i = 0; i < g_cvAmount.IntValue; i++)
 	{
