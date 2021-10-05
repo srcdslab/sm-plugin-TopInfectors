@@ -25,7 +25,7 @@ enum WeaponAmmoGrenadeType
     GrenadeType_Tactical            = 22,   /** CSGO - Tactical slot. */
 }
 
-#define BELL_SOUND_COMMON	"nide/bell.wav"
+#define BELL_SOUND_COMMON	"topinfectors/bell.wav"
 #define SKULL_MODEL_CSGO	"models/topdefenders_perk/skull_v2.mdl"
 #define SKULL_MODEL_CSS		"models/unloze/skull_v3.mdl"
 
