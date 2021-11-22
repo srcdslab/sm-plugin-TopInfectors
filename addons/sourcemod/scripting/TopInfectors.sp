@@ -248,7 +248,7 @@ public void Event_OnRoundEnd(Event event, char[] name, bool dontBroadcast)
 	}
 
 	if (g_cvPrint.IntValue <= 0 || g_cvPrint.IntValue == 1)
-		PrintToChatAll(sBuffer);
+		CPrintToChatAll("{darkred}%s", sBuffer);
 
 	if (g_cvPrint.IntValue <= 0 || g_cvPrint.IntValue == 2)
 	{
