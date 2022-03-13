@@ -39,7 +39,7 @@ int g_iTopInfector[MAXPLAYERS + 1] = { -1, ... };
 int g_iPrintColor[3];
 float g_fPrintPos[2];
 
-ConVar g_cvAmount, g_cvNades, g_cvPrint, g_cvPrintPos, g_cvPrintColor;
+ConVar g_cvHat, g_cvAmount, g_cvNades, g_cvPrint, g_cvPrintPos, g_cvPrintColor;
 
 Handle g_hHudSync = INVALID_HANDLE;
 
@@ -51,9 +51,9 @@ bool g_bIsCSGO = false;
 public Plugin myinfo = 
 {
 	name 			= 		"Top Infectors",
-	author 			=		"Nano, maxime1907",
+	author 			=		"Nano, maxime1907, .Rushaway",
 	description 	= 		"Show top infectors after each round",
-	version 		= 		"1.0",
+	version 		= 		"1.1",
 }
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
@@ -70,6 +70,7 @@ public void OnPluginStart()
 
 	g_cvAmount = CreateConVar("sm_topinfectors_players", "3", "Amount of players on the top infectors table", _, true, 0.0, true, 5.0);
 	g_cvNades = CreateConVar("sm_topinfectors_nades", "1", "How much nades are given to top infectors", _, true, 0.0, true, 10.0);
+	g_cvHat = 	CreateConVar("sm_topinfectors_hat", "1", "Enable hat on top infectors", _, true, 0.0, true, 1.0);
 	g_cvPrint = CreateConVar("sm_topinfectors_print", "0", "2 - Display in hud, 1 - In chat, 0 - Both", _, true, 0.0, true, 2.0);
 	g_cvPrintPos = CreateConVar("sm_topinfectors_print_position", "0.02 0.42", "The X and Y position for the hud.");
 	g_cvPrintColor = CreateConVar("sm_topinfectors_print_color", "255 0 0", "RGB color value for the hud.");
@@ -315,11 +316,13 @@ public void SetPerks(int client, char[] notifHudMsg, char[] notifChatMsg)
 		return;
 
 	EmitSoundToClient(client, BELL_SOUND_COMMON, .volume=1.0);
-
-	if (g_bIsCSGO)
+	if (GetConVarInt(g_cvHat) == 1)
+	{
+		if (g_bIsCSGO)
 		CreateHat_CSGO(client);
-	else
+		else
 		CreateHat_CSS(client);
+	}
 }
 
 //---------------------------------------
@@ -442,10 +445,13 @@ stock void ToggleSkull(int client)
 	}
 	else if (!g_bHideSkull[client] && IsValidClient(client) && IsPlayerAlive(client) && g_iTopInfector[client] == 0)
 	{
-		if (g_bIsCSGO)
-			CreateHat_CSGO(client);
-		else
-			CreateHat_CSS(client);
+		if (GetConVarInt(g_cvHat) == 1)
+		{
+			if (g_bIsCSGO)
+				CreateHat_CSGO(client);
+			else
+				CreateHat_CSS(client);
+		}
 	}
 	CPrintToChat(client, "{darkblue}%t {grey}%t", "Chat Prefix", g_bHideSkull[client] ? "Skull Disabled" : "Skull Enabled");
 }
