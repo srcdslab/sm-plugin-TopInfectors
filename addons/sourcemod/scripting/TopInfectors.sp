@@ -44,6 +44,7 @@ ConVar g_cvHat, g_cvAmount, g_cvNades, g_cvPrint, g_cvPrintPos, g_cvPrintColor;
 Handle g_hHudSync = INVALID_HANDLE;
 
 bool g_bHideSkull[MAXPLAYERS+1] = { false, ... };
+Handle g_hSpawnTimer[MAXPLAYERS + 1];
 Handle g_hCookie_HideSkull;
 
 bool g_bIsCSGO = false;
@@ -53,7 +54,7 @@ public Plugin myinfo =
 	name 			= 		"Top Infectors",
 	author 			=		"Nano, maxime1907, .Rushaway",
 	description 	= 		"Show top infectors after each round",
-	version 		= 		"1.1",
+	version 		= 		"1.2",
 }
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
@@ -116,6 +117,14 @@ public void OnMapStart()
 		PrecacheModel(SKULL_MODEL_CSS);
 
 	AddFilesToDownloadsTable("topinfectors_downloadlist.ini");
+}
+
+public void OnMapEnd()
+{
+    for (int i = 1; i <= MaxClients; i++)
+    {
+        delete g_hSpawnTimer[i];
+    }
 }
 
 public void OnClientPutInServer(int client)
@@ -204,8 +213,9 @@ public void Event_OnPlayerSpawn(Event event, const char[] name, bool dontbroadca
 
 	if (!IsValidClient(client) || !IsPlayerAlive(client) || !ZR_IsClientHuman(client) || g_iTopInfector[client] <= -1)
 		return;
-
-	CreateTimer(7.0, Timer_OnClientSpawnPost, client, TIMER_FLAG_NO_MAPCHANGE);
+	
+	delete g_hSpawnTimer[client];
+	g_hSpawnTimer[client] = CreateTimer(7.0, Timer_OnClientSpawnPost, client);
 }
 
 public void Event_OnRoundEnd(Event event, char[] name, bool dontBroadcast) 
@@ -331,6 +341,7 @@ public void SetPerks(int client, char[] notifHudMsg, char[] notifChatMsg)
 
 public Action Timer_OnClientSpawnPost(Handle timer, any client)
 {
+	g_hSpawnTimer[client] = null;
 	if (!IsValidClient(client) || !IsPlayerAlive(client) || g_iTopInfector[client] <= -1 || !ZR_IsClientHuman(client))
 		return;
 
