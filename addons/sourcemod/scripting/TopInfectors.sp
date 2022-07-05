@@ -29,7 +29,7 @@ enum WeaponAmmoGrenadeType
 #define SKULL_MODEL_CSGO	"models/topdefenders_perk/skull_v2.mdl"
 #define SKULL_MODEL_CSS		"models/unloze/skull_v3.mdl"
 
-int g_iEntIndex[MAXPLAYERS + 1] = -1;
+int g_iEntIndex[MAXPLAYERS + 1] = { -1, ... };
 
 int g_iSkullEntity = -1;
 
@@ -71,7 +71,7 @@ public void OnPluginStart()
 
 	g_cvAmount = CreateConVar("sm_topinfectors_players", "3", "Amount of players on the top infectors table", _, true, 0.0, true, 5.0);
 	g_cvNades = CreateConVar("sm_topinfectors_nades", "1", "How much nades are given to top infectors", _, true, 0.0, true, 10.0);
-	g_cvHat = 	CreateConVar("sm_topinfectors_hat", "1", "Enable hat on top infectors", _, true, 0.0, true, 1.0);
+	g_cvHat = CreateConVar("sm_topinfectors_hat", "1", "Enable hat on top infectors", _, true, 0.0, true, 1.0);
 	g_cvPrint = CreateConVar("sm_topinfectors_print", "0", "2 - Display in hud, 1 - In chat, 0 - Both", _, true, 0.0, true, 2.0);
 	g_cvPrintPos = CreateConVar("sm_topinfectors_print_position", "0.02 0.42", "The X and Y position for the hud.");
 	g_cvPrintColor = CreateConVar("sm_topinfectors_print_color", "255 0 0", "RGB color value for the hud.");
@@ -343,13 +343,14 @@ public Action Timer_OnClientSpawnPost(Handle timer, any client)
 {
 	g_hSpawnTimer[client] = null;
 	if (!IsValidClient(client) || !IsPlayerAlive(client) || g_iTopInfector[client] <= -1 || !ZR_IsClientHuman(client))
-		return;
+		return Plugin_Continue;
 
 	SetPerks(
 		client,
 		"You have been rewarded grenades\nsince you were the Top Infector last round!",
 		"You have been rewarded grenades since you were the Top Infector last round!"
 	);
+	return Plugin_Continue;
 }
 
 //---------------------------------------
@@ -407,6 +408,7 @@ public int MenuHandler_MainMenu(Menu menu, MenuAction action, int client, int se
 			delete menu;
 		}
 	}
+	return 0;
 }
 
 //---------------------------------------
