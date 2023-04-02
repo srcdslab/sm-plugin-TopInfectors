@@ -24,9 +24,9 @@ jobs:
           mkdir -p /tmp/package
           cp -R .sourceknight/package/* /tmp/package
           cp -R addons/sourcemod/translations /tmp/package/common/addons/sourcemod/
-          cp -R materials/models/unloze/skull/* /tmp/package/materials/models/unloze/skull/
-          cp -R models/unloze/* /tmp/package/models/unloze/
-          cp -R sound/topinfectors/* /tmp/package/sound/topinfectors/
+          cp -R materials/models/unloze/skull/* /tmp/package/
+          cp -R models/unloze/* /tmp/package/
+          cp -R sound/topinfectors/* /tmp/package/
 
       - name: Upload build archive for test runners
         uses: actions/upload-artifact@v3
