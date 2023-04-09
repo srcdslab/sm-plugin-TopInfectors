@@ -1,6 +1,6 @@
 name: CI
 
-on: [push, pull_request, workflow_dispatch]
+on: [push, pull_request]
 
 jobs:
   build:
@@ -22,11 +22,10 @@ jobs:
       - name: Create package
         run: |
           mkdir -p /tmp/package
-          cp -R .sourceknight/package/* /tmp/package
-          cp -R addons/sourcemod/translations /tmp/package/common/addons/sourcemod/
-          cp -R materials/models/unloze/skull/* /tmp/package/
-          cp -R models/unloze/* /tmp/package/
-          cp -R sound/topinfectors/* /tmp/package/
+          cp -R materials /tmp/package/common/
+          cp -R models /tmp/package/common/
+          cp -R addons /tmp/package/common/
+          cp -R sound /tmp/package/common/
 
       - name: Upload build archive for test runners
         uses: actions/upload-artifact@v3
