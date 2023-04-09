@@ -22,6 +22,7 @@ jobs:
       - name: Create package
         run: |
           mkdir -p /tmp/package
+          cp -R .sourceknight/package/* /tmp/package
           cp -R materials /tmp/package/common/
           cp -R models /tmp/package/common/
           cp -R addons /tmp/package/common/
