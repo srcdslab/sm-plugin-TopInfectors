@@ -52,6 +52,8 @@ Handle g_hSpawnTimer[MAXPLAYERS + 1];
 Handle g_hCookie_HideSkull;
 
 bool g_bIsCSGO = false;
+bool g_bNemesis = false;
+bool g_bDynamicChannels = false;
 
 public Plugin myinfo = 
 {
@@ -228,15 +230,12 @@ public void Event_OnClientDeath(Event hEvent, const char[] sEvent, bool bDontBro
 
 		break;
 	}
+
 	if (g_bNemesis)
 	{
 		int attacker = GetClientOfUserId(hEvent.GetInt("attacker"));
 		if (attacker > 0 && attacker <= MaxClients && IsClientInGame(attacker) && IsPlayerAlive(attacker) && ZR_IsClientZombie(attacker))
-		{
-			if (g_iInfectCount[attacker] == 1) g_iInfectCount[attacker]++; // 1st kill is never counted, so tricky fix to display the correct value..
-
 			g_iInfectCount[attacker]++;
-		}
 	}
 }
 
@@ -284,26 +283,19 @@ public void Event_OnRoundEnd(Event event, char[] name, bool dontBroadcast)
 		return;
 
 	char sBuffer[512];
-	if (g_bNemesis)
-		Format(sBuffer, sizeof(sBuffer), "TOP NEMESIS:");
-	else
-		Format(sBuffer, sizeof(sBuffer), "TOP INFECTORS:");
+	Format(sBuffer, sizeof(sBuffer), "TOP %s:", g_bNemesis ? "NEMESIS" : "INFECTORS");
 
 	for (int i = 0; i < g_cvAmount.IntValue; i++)
 	{
 		if (iSortedList[i][0])
 		{
 			g_iTopInfector[iSortedList[i][0]] = i;
+			Format(sBuffer, sizeof(sBuffer), "%s\n%d. %N - %d %s", sBuffer, i + 1, iSortedList[i][0], iSortedList[i][1], g_bNemesis ? "KILLS" : "INFECTS");
+
 			if (g_bNemesis)
-			{
-				Format(sBuffer, sizeof(sBuffer), "%s\n%d. %N - %d KILLS", sBuffer, i + 1, iSortedList[i][0], iSortedList[i][1]);
 				LogPlayerEvent(iSortedList[i][0], "triggered", i == 0 ? "top_nemesis" : (i == 1 ? "second_nemesis" : (i == 2 ? "third_nemesis" : "super_nemesis")));
-			}
 			else
-			{
-				Format(sBuffer, sizeof(sBuffer), "%s\n%d. %N - %d INFECTED", sBuffer, i + 1, iSortedList[i][0], iSortedList[i][1]);
 				LogPlayerEvent(iSortedList[i][0], "triggered", i == 0 ? "top_infector" : (i == 1 ? "second_infector" : (i == 2 ? "third_infector" : "super_infector")));
-			}
 		}
 	}
 
@@ -313,12 +305,13 @@ public void Event_OnRoundEnd(Event event, char[] name, bool dontBroadcast)
 	bool bDynamicAvailable = false;
 	int iHUDChannel = -1;
 
-#if defined _DynamicChannels_included_
 	int iChannel = g_cvHUDChannel.IntValue;
 	if (iChannel < 0 || iChannel > 6)
 		iChannel = 2;
 
 	bDynamicAvailable = g_bDynamicChannels && CanTestFeatures() && GetFeatureStatus(FeatureType_Native, "GetDynamicChannel") == FeatureStatus_Available;
+
+#if defined _DynamicChannels_included_
 	if (bDynamicAvailable)
 		iHUDChannel = GetDynamicChannel(iChannel);
 #endif
