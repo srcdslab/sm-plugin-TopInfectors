@@ -5,6 +5,10 @@
 #include <multicolors>
 #include <clientprefs>
 
+#undef REQUIRE_PLUGIN
+#tryinclude <DynamicChannels>
+#define REQUIRE_PLUGIN
+
 #include "loghelper.inc"
 #include "utilshelper.inc"
 
@@ -13,16 +17,16 @@
 
 enum WeaponAmmoGrenadeType
 {
-    GrenadeType_Invalid             = -1,   /** Invalid grenade slot. */
-    GrenadeType_HEGrenade           = 11,   /** CSS - HEGrenade slot */
-    GrenadeType_Flashbang           = 12,   /** CSS - Flashbang slot. */
-    GrenadeType_Smokegrenade        = 13,   /** CSS - Smokegrenade slot. */
-    GrenadeType_HEGrenadeCSGO       = 14,   /** CSGO - HEGrenade slot. */
-    GrenadeType_FlashbangCSGO       = 15,   /** CSGO - Flashbang slot. */
-    GrenadeType_SmokegrenadeCSGO    = 16,   /** CSGO - Smokegrenade slot. */
-    GrenadeType_Incendiary          = 17,   /** CSGO - Incendiary and Molotov slot. */
-    GrenadeType_Decoy               = 18,   /** CSGO - Decoy slot. */
-    GrenadeType_Tactical            = 22,   /** CSGO - Tactical slot. */
+	GrenadeType_Invalid             = -1,   /** Invalid grenade slot. */
+	GrenadeType_HEGrenade           = 11,   /** CSS - HEGrenade slot */
+	GrenadeType_Flashbang           = 12,   /** CSS - Flashbang slot. */
+	GrenadeType_Smokegrenade        = 13,   /** CSS - Smokegrenade slot. */
+	GrenadeType_HEGrenadeCSGO       = 14,   /** CSGO - HEGrenade slot. */
+	GrenadeType_FlashbangCSGO       = 15,   /** CSGO - Flashbang slot. */
+	GrenadeType_SmokegrenadeCSGO    = 16,   /** CSGO - Smokegrenade slot. */
+	GrenadeType_Incendiary          = 17,   /** CSGO - Incendiary and Molotov slot. */
+	GrenadeType_Decoy               = 18,   /** CSGO - Decoy slot. */
+	GrenadeType_Tactical            = 22,   /** CSGO - Tactical slot. */
 }
 
 #define BELL_SOUND_COMMON	"topinfectors/bell.wav"
@@ -39,7 +43,7 @@ int g_iTopInfector[MAXPLAYERS + 1] = { -1, ... };
 int g_iPrintColor[3];
 float g_fPrintPos[2];
 
-ConVar g_cvHat, g_cvAmount, g_cvNades, g_cvPrint, g_cvPrintPos, g_cvPrintColor;
+ConVar g_cvHat, g_cvAmount, g_cvHENades, g_cvSmokeNades, g_cvPrint, g_cvPrintPos, g_cvPrintColor, g_cvHUDChannel;
 
 Handle g_hHudSync = INVALID_HANDLE;
 
@@ -54,7 +58,7 @@ public Plugin myinfo =
 	name 			= 		"Top Infectors",
 	author 			=		"Nano, maxime1907, .Rushaway",
 	description 	= 		"Show top infectors after each round",
-	version 		= 		"1.2",
+	version 		= 		"1.2.1",
 }
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
@@ -70,11 +74,13 @@ public void OnPluginStart()
 	LoadTranslations("topinfectors.phrases");
 
 	g_cvAmount = CreateConVar("sm_topinfectors_players", "3", "Amount of players on the top infectors table", _, true, 0.0, true, 5.0);
-	g_cvNades = CreateConVar("sm_topinfectors_nades", "1", "How much nades are given to top infectors", _, true, 0.0, true, 10.0);
+	g_cvHENades = CreateConVar("sm_topinfectors_nades", "1", "How much nades are given to top infectors", _, true, 0.0, true, 10.0);
+	g_cvSmokeNades = CreateConVar("sm_topinfectors_smokes", "1", "How much smokes are given to top killers", _, true, 0.0, true, 10.0);
 	g_cvHat = CreateConVar("sm_topinfectors_hat", "1", "Enable hat on top infectors", _, true, 0.0, true, 1.0);
 	g_cvPrint = CreateConVar("sm_topinfectors_print", "0", "2 - Display in hud, 1 - In chat, 0 - Both", _, true, 0.0, true, 2.0);
 	g_cvPrintPos = CreateConVar("sm_topinfectors_print_position", "0.02 0.42", "The X and Y position for the hud.");
 	g_cvPrintColor = CreateConVar("sm_topinfectors_print_color", "255 0 0", "RGB color value for the hud.");
+	g_cvHUDChannel = CreateConVar("sm_topinfectors_hud_channel", "2", "The channel for the hud if using DynamicChannels", _, true, 0.0, true, 6.0);
 
 	g_cvPrint.AddChangeHook(OnConVarChange);
 	g_cvPrintPos.AddChangeHook(OnConVarChange);
@@ -102,6 +108,28 @@ public void OnPluginEnd()
 	Cleanup(true);
 }
 
+public void OnAllPluginsLoaded()
+{
+	g_bNemesis = LibraryExists("Nemesis");
+	g_bDynamicChannels = LibraryExists("DynamicChannels");
+}
+
+public void OnLibraryAdded(const char[] name)
+{
+	if (strcmp(name, "Nemesis", false) == 0)
+		g_bNemesis = true;
+	if (strcmp(name, "DynamicChannels", false) == 0)
+		g_bDynamicChannels = true;
+}
+
+public void OnLibraryRemoved(const char[] name)
+{
+	if (strcmp(name, "Nemesis", false) == 0)
+		g_bNemesis = false;
+	if (strcmp(name, "DynamicChannels", false) == 0)
+		g_bDynamicChannels = false;
+}
+
 public void OnConVarChange(ConVar convar, char[] oldValue, char[] newValue)
 {
 	GetConVars();
@@ -121,10 +149,10 @@ public void OnMapStart()
 
 public void OnMapEnd()
 {
-    for (int i = 1; i <= MaxClients; i++)
-    {
-        delete g_hSpawnTimer[i];
-    }
+	for (int i = 1; i <= MaxClients; i++)
+	{
+		delete g_hSpawnTimer[i];
+	}
 }
 
 public void OnClientPutInServer(int client)
@@ -200,6 +228,16 @@ public void Event_OnClientDeath(Event hEvent, const char[] sEvent, bool bDontBro
 
 		break;
 	}
+	if (g_bNemesis)
+	{
+		int attacker = GetClientOfUserId(hEvent.GetInt("attacker"));
+		if (attacker > 0 && attacker <= MaxClients && IsClientInGame(attacker) && IsPlayerAlive(attacker) && ZR_IsClientZombie(attacker))
+		{
+			if (g_iInfectCount[attacker] == 1) g_iInfectCount[attacker]++; // 1st kill is never counted, so tricky fix to display the correct value..
+
+			g_iInfectCount[attacker]++;
+		}
+	}
 }
 
 public void Event_OnRoundStart(Event event, char[] name, bool dontBroadcast) 
@@ -246,20 +284,44 @@ public void Event_OnRoundEnd(Event event, char[] name, bool dontBroadcast)
 		return;
 
 	char sBuffer[512];
-	Format(sBuffer, sizeof(sBuffer), "TOP INFECTORS:");
+	if (g_bNemesis)
+		Format(sBuffer, sizeof(sBuffer), "TOP NEMESIS:");
+	else
+		Format(sBuffer, sizeof(sBuffer), "TOP INFECTORS:");
 
 	for (int i = 0; i < g_cvAmount.IntValue; i++)
 	{
 		if (iSortedList[i][0])
 		{
 			g_iTopInfector[iSortedList[i][0]] = i;
-			Format(sBuffer, sizeof(sBuffer), "%s\n%d. %N - %d INFECTED", sBuffer, i + 1, iSortedList[i][0], iSortedList[i][1]);
-			LogPlayerEvent(iSortedList[i][0], "triggered", i == 0 ? "top_infector" : (i == 1 ? "second_infector" : (i == 2 ? "third_infector" : "super_infector")));
+			if (g_bNemesis)
+			{
+				Format(sBuffer, sizeof(sBuffer), "%s\n%d. %N - %d KILLS", sBuffer, i + 1, iSortedList[i][0], iSortedList[i][1]);
+				LogPlayerEvent(iSortedList[i][0], "triggered", i == 0 ? "top_nemesis" : (i == 1 ? "second_nemesis" : (i == 2 ? "third_nemesis" : "super_nemesis")));
+			}
+			else
+			{
+				Format(sBuffer, sizeof(sBuffer), "%s\n%d. %N - %d INFECTED", sBuffer, i + 1, iSortedList[i][0], iSortedList[i][1]);
+				LogPlayerEvent(iSortedList[i][0], "triggered", i == 0 ? "top_infector" : (i == 1 ? "second_infector" : (i == 2 ? "third_infector" : "super_infector")));
+			}
 		}
 	}
 
 	if (g_cvPrint.IntValue <= 0 || g_cvPrint.IntValue == 1)
 		CPrintToChatAll("{darkred}%s", sBuffer);
+
+	bool bDynamicAvailable = false;
+	int iHUDChannel = -1;
+
+#if defined _DynamicChannels_included_
+	int iChannel = g_cvHUDChannel.IntValue;
+	if (iChannel < 0 || iChannel > 6)
+		iChannel = 2;
+
+	bDynamicAvailable = g_bDynamicChannels && CanTestFeatures() && GetFeatureStatus(FeatureType_Native, "GetDynamicChannel") == FeatureStatus_Available;
+	if (bDynamicAvailable)
+		iHUDChannel = GetDynamicChannel(iChannel);
+#endif
 
 	if (g_cvPrint.IntValue <= 0 || g_cvPrint.IntValue == 2)
 	{
@@ -270,8 +332,13 @@ public void Event_OnRoundEnd(Event event, char[] name, bool dontBroadcast)
 			if (!IsValidClient(client))
 				continue;
 
-			ClearSyncHud(client, g_hHudSync);
-			ShowSyncHudText(client, g_hHudSync, "%s", sBuffer);
+			if (bDynamicAvailable)
+				ShowHudText(client, iHUDChannel, "%s", sBuffer);
+			else
+			{
+				ClearSyncHud(client, g_hHudSync);
+				ShowSyncHudText(client, g_hHudSync, "%s", sBuffer);
+			}
 		}
 	}
 }
@@ -287,7 +354,7 @@ public void SetPerks(int client, char[] notifHudMsg, char[] notifChatMsg)
 			PbSetInt(hMessageInfection, "effect", 0);
 			PbSetColor(hMessageInfection, "clr1", {255, 255, 255, 255});
 			PbSetColor(hMessageInfection, "clr2", {255, 255, 255, 255});
-			PbSetVector2D(hMessageInfection, "pos", view_as<float>({-1.0, 0.3}));
+			PbSetVector2D(hMessageInfection, "pos", view_as<float>({-1.0, 0.2}));
 			PbSetFloat(hMessageInfection, "fade_in_time", 0.1);
 			PbSetFloat(hMessageInfection, "fade_out_time", 0.1);
 			PbSetFloat(hMessageInfection, "hold_time", 5.0);
@@ -299,7 +366,7 @@ public void SetPerks(int client, char[] notifHudMsg, char[] notifChatMsg)
 		{
 			BfWriteByte(hMessageInfection, 50);
 			BfWriteFloat(hMessageInfection, -1.0);
-			BfWriteFloat(hMessageInfection, 0.3);
+			BfWriteFloat(hMessageInfection, 0.2);
 			BfWriteByte(hMessageInfection, 0);
 			BfWriteByte(hMessageInfection, 255);
 			BfWriteByte(hMessageInfection, 255);
@@ -318,9 +385,14 @@ public void SetPerks(int client, char[] notifHudMsg, char[] notifChatMsg)
 		}
 	}
 
-	CPrintToChat(client, "{darkblue}%t {grey}%s", "Chat Prefix", notifChatMsg);
+	if (g_bNemesis)
+		CPrintToChat(client, "{darkred}[TopNemesis] {grey}%s", notifChatMsg);
+	else
+		CPrintToChat(client, "{darkblue}%t {grey}%s", "Chat Prefix", notifChatMsg);
 
-	GiveGrenadesToClient(client, g_cvNades.IntValue, g_bIsCSGO ? GrenadeType_HEGrenadeCSGO : GrenadeType_HEGrenade);
+	GiveGrenadesToClient(client, g_cvHENades.IntValue, g_bIsCSGO ? GrenadeType_HEGrenadeCSGO : GrenadeType_HEGrenade);
+	if (g_bNemesis)
+		GiveGrenadesToClient(client, g_cvSmokeNades.IntValue, g_bIsCSGO ? GrenadeType_SmokegrenadeCSGO : GrenadeType_Smokegrenade);
 
 	if (g_iTopInfector[client] != 0 || g_bHideSkull[client])
 		return;
@@ -345,11 +417,11 @@ public Action Timer_OnClientSpawnPost(Handle timer, any client)
 	if (!IsValidClient(client) || !IsPlayerAlive(client) || g_iTopInfector[client] <= -1 || !ZR_IsClientHuman(client))
 		return Plugin_Continue;
 
-	SetPerks(
-		client,
-		"You have been rewarded grenades\nsince you were the Top Infector last round!",
-		"You have been rewarded grenades since you were the Top Infector last round!"
-	);
+	char sHudMsg[256], sNotifMsg[256];
+	FormatEx(sHudMsg, sizeof(sHudMsg), "You have been rewarded grenades\nsince you were the Top %s last round!", g_bNemesis ? "Nemesis" : "Infector");
+	FormatEx(sNotifMsg, sizeof(sNotifMsg), "You have been rewarded grenades since you were the Top %s last round!", g_bNemesis ? "Nemesis" : "Infector");
+	SetPerks(client, sHudMsg, sNotifMsg);
+
 	return Plugin_Continue;
 }
 
@@ -466,6 +538,7 @@ stock void ToggleSkull(int client)
 				CreateHat_CSS(client);
 		}
 	}
+
 	CPrintToChat(client, "{darkblue}%t {grey}%t", "Chat Prefix", g_bHideSkull[client] ? "Skull Disabled" : "Skull Enabled");
 }
 
@@ -601,7 +674,7 @@ public int SortInfectorsList(int[] elem1, int[] elem2, const int[][] array, Hand
 
 bool IsValidZombie(int attacker) 
 {
-    return (0 < attacker <= MaxClients && IsValidEntity(attacker) && IsClientInGame(attacker) && IsPlayerAlive(attacker));
+	return (0 < attacker <= MaxClients && IsValidEntity(attacker) && IsClientInGame(attacker) && IsPlayerAlive(attacker));
 }
 
 //---------------------------------------
