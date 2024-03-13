@@ -290,7 +290,7 @@ public void Event_OnRoundEnd(Event event, char[] name, bool dontBroadcast)
 		if (iSortedList[i][0])
 		{
 			g_iTopInfector[iSortedList[i][0]] = i;
-			Format(sBuffer, sizeof(sBuffer), "%s\n%d. %N - %d %s", sBuffer, i + 1, iSortedList[i][0], iSortedList[i][1], g_bNemesis ? "KILLS" : "INFECTS");
+			Format(sBuffer, sizeof(sBuffer), "%s\n%d. %N - %d %s", sBuffer, i + 1, iSortedList[i][0], iSortedList[i][1], g_bNemesis ? "KILLED" : "INFECTED");
 
 			if (g_bNemesis)
 				LogPlayerEvent(iSortedList[i][0], "triggered", i == 0 ? "top_nemesis" : (i == 1 ? "second_nemesis" : (i == 2 ? "third_nemesis" : "super_nemesis")));
