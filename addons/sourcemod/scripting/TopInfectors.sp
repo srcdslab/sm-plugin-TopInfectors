@@ -60,7 +60,7 @@ public Plugin myinfo =
 	name 			= 		"Top Infectors",
 	author 			=		"Nano, maxime1907, .Rushaway",
 	description 	= 		"Show top infectors after each round",
-	version 		= 		"1.2.1",
+	version 		= 		"1.2.2",
 }
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
@@ -183,6 +183,9 @@ public void OnClientCookiesCached(int client)
 
 public void OnClientDisconnect(int client)
 {
+	if (!AreClientCookiesCached(client) || IsFakeClient(client))
+		return;
+
 	SetClientCookie(client, g_hCookie_HideSkull, g_bHideSkull[client] ? "1" : "");
 
 	g_bHideSkull[client] = false;
