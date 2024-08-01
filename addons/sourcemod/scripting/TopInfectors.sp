@@ -30,7 +30,7 @@ enum WeaponAmmoGrenadeType
 }
 
 #define BELL_SOUND_COMMON   "topinfectors/bell.wav"
-#define SKULL_MODEL_CSS     "models/unloze/skull_v3.mdl"
+#define SKULL_MODEL     "models/unloze/skull_v3.mdl"
 
 int g_iSkullEntity = -1;
 
@@ -135,7 +135,7 @@ public void OnConVarChange(ConVar convar, char[] oldValue, char[] newValue)
 public void OnMapStart()
 {
 	PrecacheSound(BELL_SOUND_COMMON);
-	PrecacheModel(SKULL_MODEL_CSS);
+	PrecacheModel(SKULL_MODEL);
 	AddFilesToDownloadsTable("topinfectors_downloadlist.ini");
 }
 
@@ -215,7 +215,7 @@ public void Event_OnClientDeath(Event hEvent, const char[] sEvent, bool bDontBro
 
 		if (g_iTopInfector[i] == 0 && !IsPlayerAlive(i))
 		{
-			RemoveHat_CSS(i);
+			RemoveHat(i);
 		}
 
 		break;
@@ -383,7 +383,7 @@ public void SetPerks(int client, char[] notifHudMsg, char[] notifChatMsg)
 	EmitSoundToClient(client, BELL_SOUND_COMMON, .volume=1.0);
 	if (GetConVarInt(g_cvHat) == 1)
 	{
-		CreateHat_CSS(client);
+		CreateHat(client);
 	}
 }
 
@@ -503,20 +503,20 @@ stock void ToggleSkull(int client)
 	g_bHideSkull[client] = !g_bHideSkull[client];
 	if (g_bHideSkull[client] && IsValidClient(client) && IsPlayerAlive(client) && g_iTopInfector[client] == 0)
 	{
-		RemoveHat_CSS(client);
+		RemoveHat(client);
 	}
 	else if (!g_bHideSkull[client] && IsValidClient(client) && IsPlayerAlive(client) && g_iTopInfector[client] == 0)
 	{
 		if (GetConVarInt(g_cvHat) == 1)
 		{
-			CreateHat_CSS(client);
+			CreateHat(client);
 		}
 	}
 
 	CPrintToChat(client, "{darkblue}%t {grey}%t", "Chat Prefix", g_bHideSkull[client] ? "Skull Disabled" : "Skull Enabled");
 }
 
-stock void RemoveHat_CSS(int client)
+stock void RemoveHat(int client)
 {
 	if (g_iSkullEntity != INVALID_ENT_REFERENCE)
 	{
@@ -527,13 +527,13 @@ stock void RemoveHat_CSS(int client)
 	}
 }
 
-void CreateHat_CSS(int client) 
+void CreateHat(int client) 
 { 
 	if ((g_iSkullEntity = EntIndexToEntRef(CreateEntityByName("prop_dynamic"))) == INVALID_ENT_REFERENCE)
 		return;
 	
 	int iCrownEntity = EntRefToEntIndex(g_iSkullEntity);
-	SetEntityModel(iCrownEntity, SKULL_MODEL_CSS);
+	SetEntityModel(iCrownEntity, SKULL_MODEL);
 
 	DispatchKeyValue(iCrownEntity, "solid",                 "0");
 	DispatchKeyValue(iCrownEntity, "modelscale",            "1.3");
