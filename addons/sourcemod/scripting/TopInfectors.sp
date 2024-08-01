@@ -29,9 +29,9 @@ enum WeaponAmmoGrenadeType
 	GrenadeType_Tactical            = 22,   /** CSGO - Tactical slot. */
 }
 
-#define BELL_SOUND_COMMON	"topinfectors/bell.wav"
-#define SKULL_MODEL_CSGO	"models/topdefenders_perk/skull_v2.mdl"
-#define SKULL_MODEL_CSS		"models/unloze/skull_v3.mdl"
+#define BELL_SOUND_COMMON   "topinfectors/bell.wav"
+#define SKULL_MODEL_CSGO    "models/topdefenders_perk/skull_v2.mdl"
+#define SKULL_MODEL_CSS     "models/unloze/skull_v3.mdl"
 
 int g_iEntIndex[MAXPLAYERS + 1] = { -1, ... };
 
@@ -57,10 +57,10 @@ bool g_bDynamicChannels = false;
 
 public Plugin myinfo = 
 {
-	name 			= 		"Top Infectors",
-	author 			=		"Nano, maxime1907, .Rushaway",
-	description 	= 		"Show top infectors after each round",
-	version 		= 		"1.2.2",
+	name            =       "Top Infectors",
+	author          =       "Nano, maxime1907, .Rushaway",
+	description     =       "Show top infectors after each round",
+	version         =       "1.2.2",
 }
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
@@ -543,7 +543,7 @@ stock void RemoveHat_CSS(int client)
 	if (!g_bIsCSGO && g_iSkullEntity != INVALID_ENT_REFERENCE)
 	{
 		int iCrownEntity = EntRefToEntIndex(g_iSkullEntity);
-		if(IsValidEntity(iCrownEntity))
+		if (IsValidEntity(iCrownEntity))
 			AcceptEntityInput(iCrownEntity, "Kill");
 		g_iSkullEntity = INVALID_ENT_REFERENCE;
 	}
