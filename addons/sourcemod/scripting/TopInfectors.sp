@@ -21,16 +21,10 @@ enum WeaponAmmoGrenadeType
 	GrenadeType_HEGrenade           = 11,   /** CSS - HEGrenade slot */
 	GrenadeType_Flashbang           = 12,   /** CSS - Flashbang slot. */
 	GrenadeType_Smokegrenade        = 13,   /** CSS - Smokegrenade slot. */
-	GrenadeType_HEGrenadeCSGO       = 14,   /** CSGO - HEGrenade slot. */
-	GrenadeType_FlashbangCSGO       = 15,   /** CSGO - Flashbang slot. */
-	GrenadeType_SmokegrenadeCSGO    = 16,   /** CSGO - Smokegrenade slot. */
-	GrenadeType_Incendiary          = 17,   /** CSGO - Incendiary and Molotov slot. */
-	GrenadeType_Decoy               = 18,   /** CSGO - Decoy slot. */
-	GrenadeType_Tactical            = 22,   /** CSGO - Tactical slot. */
 }
 
 #define BELL_SOUND_COMMON   "topinfectors/bell.wav"
-#define SKULL_MODEL     "models/unloze/skull_v3.mdl"
+#define SKULL_MODEL         "models/unloze/skull_v3.mdl"
 
 int g_iSkullEntity = -1;
 
