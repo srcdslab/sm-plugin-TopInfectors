@@ -56,7 +56,7 @@ public Plugin myinfo =
 	name            =       "Top Infectors",
 	author          =       "Nano, maxime1907, .Rushaway",
 	description     =       "Show top infectors after each round",
-	version         =       "1.2.2",
+	version         =       "1.3",
 }
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
