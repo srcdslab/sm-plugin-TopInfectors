@@ -21,19 +21,10 @@ enum WeaponAmmoGrenadeType
 	GrenadeType_HEGrenade           = 11,   /** CSS - HEGrenade slot */
 	GrenadeType_Flashbang           = 12,   /** CSS - Flashbang slot. */
 	GrenadeType_Smokegrenade        = 13,   /** CSS - Smokegrenade slot. */
-	GrenadeType_HEGrenadeCSGO       = 14,   /** CSGO - HEGrenade slot. */
-	GrenadeType_FlashbangCSGO       = 15,   /** CSGO - Flashbang slot. */
-	GrenadeType_SmokegrenadeCSGO    = 16,   /** CSGO - Smokegrenade slot. */
-	GrenadeType_Incendiary          = 17,   /** CSGO - Incendiary and Molotov slot. */
-	GrenadeType_Decoy               = 18,   /** CSGO - Decoy slot. */
-	GrenadeType_Tactical            = 22,   /** CSGO - Tactical slot. */
 }
 
-#define BELL_SOUND_COMMON	"topinfectors/bell.wav"
-#define SKULL_MODEL_CSGO	"models/topdefenders_perk/skull_v2.mdl"
-#define SKULL_MODEL_CSS		"models/unloze/skull_v3.mdl"
-
-int g_iEntIndex[MAXPLAYERS + 1] = { -1, ... };
+#define BELL_SOUND_COMMON   "topinfectors/bell.wav"
+#define SKULL_MODEL         "models/unloze/skull_v3.mdl"
 
 int g_iSkullEntity = -1;
 
@@ -51,21 +42,19 @@ bool g_bHideSkull[MAXPLAYERS+1] = { false, ... };
 Handle g_hSpawnTimer[MAXPLAYERS + 1];
 Handle g_hCookie_HideSkull;
 
-bool g_bIsCSGO = false;
 bool g_bNemesis = false;
 bool g_bDynamicChannels = false;
 
 public Plugin myinfo = 
 {
-	name 			= 		"Top Infectors",
-	author 			=		"Nano, maxime1907, .Rushaway",
-	description 	= 		"Show top infectors after each round",
-	version 		= 		"1.2.2",
+	name            =       "Top Infectors",
+	author          =       "Nano, maxime1907, .Rushaway",
+	description     =       "Show top infectors after each round",
+	version         =       "1.3",
 }
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
 {
-	g_bIsCSGO = (GetEngineVersion() == Engine_CSGO);
 	CreateNative("TopInfectors_IsTopInfector", Native_IsTopInfector);
 	RegPluginLibrary("TopInfectors");
 	return APLRes_Success;
@@ -140,12 +129,7 @@ public void OnConVarChange(ConVar convar, char[] oldValue, char[] newValue)
 public void OnMapStart()
 {
 	PrecacheSound(BELL_SOUND_COMMON);
-
-	if (g_bIsCSGO)
-		PrecacheModel(SKULL_MODEL_CSGO);
-	else
-		PrecacheModel(SKULL_MODEL_CSS);
-
+	PrecacheModel(SKULL_MODEL);
 	AddFilesToDownloadsTable("topinfectors_downloadlist.ini");
 }
 
@@ -225,10 +209,7 @@ public void Event_OnClientDeath(Event hEvent, const char[] sEvent, bool bDontBro
 
 		if (g_iTopInfector[i] == 0 && !IsPlayerAlive(i))
 		{
-			if (!g_bIsCSGO)
-				RemoveHat_CSS(i);
-			else
-				RemoveHat_CSGO(i);
+			RemoveHat(i);
 		}
 
 		break;
@@ -386,9 +367,9 @@ public void SetPerks(int client, char[] notifHudMsg, char[] notifChatMsg)
 	else
 		CPrintToChat(client, "{darkblue}%t {grey}%s", "Chat Prefix", notifChatMsg);
 
-	GiveGrenadesToClient(client, g_cvHENades.IntValue, g_bIsCSGO ? GrenadeType_HEGrenadeCSGO : GrenadeType_HEGrenade);
+	GiveGrenadesToClient(client, g_cvHENades.IntValue, GrenadeType_HEGrenade);
 	if (g_bNemesis)
-		GiveGrenadesToClient(client, g_cvSmokeNades.IntValue, g_bIsCSGO ? GrenadeType_SmokegrenadeCSGO : GrenadeType_Smokegrenade);
+		GiveGrenadesToClient(client, g_cvSmokeNades.IntValue, GrenadeType_Smokegrenade);
 
 	if (g_iTopInfector[client] != 0 || g_bHideSkull[client])
 		return;
@@ -396,10 +377,7 @@ public void SetPerks(int client, char[] notifHudMsg, char[] notifChatMsg)
 	EmitSoundToClient(client, BELL_SOUND_COMMON, .volume=1.0);
 	if (GetConVarInt(g_cvHat) == 1)
 	{
-		if (g_bIsCSGO)
-		CreateHat_CSGO(client);
-		else
-		CreateHat_CSS(client);
+		CreateHat(client);
 	}
 }
 
@@ -519,48 +497,37 @@ stock void ToggleSkull(int client)
 	g_bHideSkull[client] = !g_bHideSkull[client];
 	if (g_bHideSkull[client] && IsValidClient(client) && IsPlayerAlive(client) && g_iTopInfector[client] == 0)
 	{
-		if (!g_bIsCSGO)
-			RemoveHat_CSS(client);
-		else
-			RemoveHat_CSGO(client);
+		RemoveHat(client);
 	}
 	else if (!g_bHideSkull[client] && IsValidClient(client) && IsPlayerAlive(client) && g_iTopInfector[client] == 0)
 	{
 		if (GetConVarInt(g_cvHat) == 1)
 		{
-			if (g_bIsCSGO)
-				CreateHat_CSGO(client);
-			else
-				CreateHat_CSS(client);
+			CreateHat(client);
 		}
 	}
 
 	CPrintToChat(client, "{darkblue}%t {grey}%t", "Chat Prefix", g_bHideSkull[client] ? "Skull Disabled" : "Skull Enabled");
 }
 
-stock void RemoveHat_CSS(int client)
+stock void RemoveHat(int client)
 {
-	if (!g_bIsCSGO && g_iSkullEntity != INVALID_ENT_REFERENCE)
+	if (g_iSkullEntity != INVALID_ENT_REFERENCE)
 	{
 		int iCrownEntity = EntRefToEntIndex(g_iSkullEntity);
-		if(IsValidEntity(iCrownEntity))
+		if (IsValidEntity(iCrownEntity))
 			AcceptEntityInput(iCrownEntity, "Kill");
 		g_iSkullEntity = INVALID_ENT_REFERENCE;
 	}
 }
 
-stock void RemoveHat_CSGO(int client)
-{
-	RemoveHat_CSS(client);
-}
-
-void CreateHat_CSS(int client) 
+void CreateHat(int client) 
 { 
 	if ((g_iSkullEntity = EntIndexToEntRef(CreateEntityByName("prop_dynamic"))) == INVALID_ENT_REFERENCE)
 		return;
 	
 	int iCrownEntity = EntRefToEntIndex(g_iSkullEntity);
-	SetEntityModel(iCrownEntity, SKULL_MODEL_CSS);
+	SetEntityModel(iCrownEntity, SKULL_MODEL);
 
 	DispatchKeyValue(iCrownEntity, "solid",                 "0");
 	DispatchKeyValue(iCrownEntity, "modelscale",            "1.3");
@@ -589,49 +556,6 @@ void CreateHat_CSS(int client)
 
 	SetVariantString("!activator");
 	AcceptEntityInput(iCrownEntity, "SetParent", client);
-}
-
-void CreateHat_CSGO(int client) 
-{ 
-	int m_iEnt = CreateEntityByName("prop_dynamic_override"); 
-	DispatchKeyValue(m_iEnt, "model", SKULL_MODEL_CSGO); 
-	DispatchKeyValue(m_iEnt, "spawnflags", "256"); 
-	DispatchKeyValue(m_iEnt, "solid", "0");
-	DispatchKeyValue(m_iEnt, "modelscale", "1.3");
-	SetEntPropEnt(m_iEnt, Prop_Send, "m_hOwnerEntity", client); 
-
-	float m_flPosition[3];
-	float m_flAngles[3], m_flForward[3], m_flRight[3], m_flUp[3];
-	GetClientAbsAngles(client, m_flAngles);
-	GetAngleVectors(m_flAngles, m_flForward, m_flRight, m_flUp);
-	GetClientEyePosition(client, m_flPosition);
-	m_flPosition[2] += 7.0;
-
-	DispatchSpawn(m_iEnt); 
-	AcceptEntityInput(m_iEnt, "TurnOn", m_iEnt, m_iEnt, 0); 
-
-	g_iEntIndex[client] = m_iEnt; 
-
-	TeleportEntity(m_iEnt, m_flPosition, m_flAngles, NULL_VECTOR); 
-
-	SetVariantString("!activator"); 
-	AcceptEntityInput(m_iEnt, "SetParent", client, m_iEnt, 0); 
-
-	SetVariantString(SKULL_MODEL_CSGO); 
-	AcceptEntityInput(m_iEnt, "SetParentAttachmentMaintainOffset", m_iEnt, m_iEnt, 0);
-
-	float fVector[3];
-	GetClientAbsOrigin(client, fVector);
-
-	fVector[2] += 80.0;
-
-	float fDirection[3];
-	fDirection[0] = 0.0;
-	fDirection[1] = 0.0;
-	fDirection[2] = 1.0;
-
-	TE_SetupSparks(fVector, fDirection, 1000, 200);
-	TE_SendToAll();
 }
 
 stock void GiveGrenadesToClient(int client, int iAmount, WeaponAmmoGrenadeType type)
