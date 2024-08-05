@@ -50,7 +50,7 @@ public Plugin myinfo =
 	name            =       "Top Infectors",
 	author          =       "Nano, maxime1907, .Rushaway",
 	description     =       "Show top infectors after each round",
-	version         =       "1.3",
+	version         =       "1.3.1",
 }
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
@@ -560,12 +560,43 @@ void CreateHat(int client)
 
 stock void GiveGrenadesToClient(int client, int iAmount, WeaponAmmoGrenadeType type)
 {
-	int iToolsAmmo = FindSendPropInfo("CBasePlayer", "m_iAmmo");
-	if (iToolsAmmo != -1)
+	int iAmmo = -1;
+	char sWeapon[32];
+	switch(type)
 	{
-		int iGrenadeCount = GetEntData(client, iToolsAmmo + (view_as<int>(type) * 4));
-		SetEntData(client, iToolsAmmo + (view_as<int>(type) * 4), iGrenadeCount + iAmount, _, true);
+		case GrenadeType_HEGrenade:
+		{
+			iAmmo = GetClientGrenades(client, GrenadeType_HEGrenade);
+			FormatEx(sWeapon, sizeof(sWeapon), "weapon_hegrenade");
+		}
+		case GrenadeType_Flashbang:
+		{
+			iAmmo = GetClientGrenades(client, GrenadeType_Flashbang);
+			FormatEx(sWeapon, sizeof(sWeapon), "weapon_flashbang");
+		}
+		case GrenadeType_Smokegrenade:
+		{
+			iAmmo = GetClientGrenades(client, GrenadeType_Smokegrenade);
+			FormatEx(sWeapon, sizeof(sWeapon), "weapon_smokegrenade");
+		}
+		default:
+			return;
 	}
+
+	if (iAmmo > 0)
+	{
+		int offsNades = FindDataMapInfo(client, "m_iAmmo") + (view_as<int>(type) * 4);
+		int count = GetEntData(client, offsNades);
+		SetEntData(client, offsNades, ++count);
+	}
+	else
+		GivePlayerItem(client, sWeapon);
+}
+
+stock int GetClientGrenades(int client, WeaponAmmoGrenadeType type)
+{
+    int offsNades = FindDataMapInfo(client, "m_iAmmo") + (view_as<int>(type) * 4);
+    return GetEntData(client, offsNades);
 }
 
 public void GetConVars()
