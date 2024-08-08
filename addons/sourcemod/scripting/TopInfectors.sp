@@ -560,25 +560,16 @@ void CreateHat(int client)
 
 stock void GiveGrenadesToClient(int client, int iAmount, WeaponAmmoGrenadeType type)
 {
-	int iAmmo = -1;
 	char sWeapon[32];
+	int iAmmo = GetClientGrenades(client, type);
 	switch(type)
 	{
 		case GrenadeType_HEGrenade:
-		{
-			iAmmo = GetClientGrenades(client, GrenadeType_HEGrenade);
 			FormatEx(sWeapon, sizeof(sWeapon), "weapon_hegrenade");
-		}
 		case GrenadeType_Flashbang:
-		{
-			iAmmo = GetClientGrenades(client, GrenadeType_Flashbang);
 			FormatEx(sWeapon, sizeof(sWeapon), "weapon_flashbang");
-		}
 		case GrenadeType_Smokegrenade:
-		{
-			iAmmo = GetClientGrenades(client, GrenadeType_Smokegrenade);
 			FormatEx(sWeapon, sizeof(sWeapon), "weapon_smokegrenade");
-		}
 		default:
 			return;
 	}
@@ -587,10 +578,19 @@ stock void GiveGrenadesToClient(int client, int iAmount, WeaponAmmoGrenadeType t
 	{
 		int offsNades = FindDataMapInfo(client, "m_iAmmo") + (view_as<int>(type) * 4);
 		int count = GetEntData(client, offsNades);
-		SetEntData(client, offsNades, ++count);
+		SetEntData(client, offsNades, count + iAmount);
 	}
 	else
+	{
 		GivePlayerItem(client, sWeapon);
+		// If the player suppose to get more than 1 grenade, now add them.
+		if (iAmount > 1)
+		{
+			int offsNades = FindDataMapInfo(client, "m_iAmmo") + (view_as<int>(type) * 4);
+			int count = GetEntData(client, offsNades);
+			SetEntData(client, offsNades, count + iAmount - 1);
+		}
+	}
 }
 
 stock int GetClientGrenades(int client, WeaponAmmoGrenadeType type)
