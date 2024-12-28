@@ -4,6 +4,7 @@
 #include <zombiereloaded>
 #include <multicolors>
 #include <clientprefs>
+#include <smlib>
 
 #undef REQUIRE_PLUGIN
 #tryinclude <DynamicChannels>
@@ -27,7 +28,8 @@ enum WeaponAmmoGrenadeType
 #define SKULL_MODEL         "models/unloze/skull_v3.mdl"
 
 int g_iSkullEntity = -1;
-
+int g_iSortedCount = 0;
+int g_iSortedList[MAXPLAYERS+1][2];
 int g_iInfectCount[MAXPLAYERS + 1] = { 0, ... };
 int g_iTopInfector[MAXPLAYERS + 1] = { -1, ... };
 
@@ -50,12 +52,14 @@ public Plugin myinfo =
 	name            =       "Top Infectors",
 	author          =       "Nano, maxime1907, .Rushaway",
 	description     =       "Show top infectors after each round",
-	version         =       "1.3.1",
+	version         =       "1.4.0",
 }
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
 {
 	CreateNative("TopInfectors_IsTopInfector", Native_IsTopInfector);
+	CreateNative("TopInfectors_GetClientRank", Native_GetClientRank);
+
 	RegPluginLibrary("TopInfectors");
 	return APLRes_Success;
 }
@@ -82,6 +86,7 @@ public void OnPluginStart()
 	SetCookieMenuItem(CookieMenu_TopInfectors, INVALID_HANDLE, "TopInfectors Settings");
 
 	RegConsoleCmd("sm_toggleskull", Command_ToggleSkull);
+	RegConsoleCmd("sm_tistatus", Command_OnToggleStatus, "Show Top Infector status - sm_tistatus <target|#userid>");
 
 	AutoExecConfig(true);
 	GetConVars();
@@ -177,9 +182,74 @@ public void OnClientDisconnect(int client)
 	g_iInfectCount[client] = 0;
 }
 
+public void UpdateInfectorsList()
+{
+	for (int i = 0; i < sizeof(g_iSortedList); i++)
+	{
+		g_iSortedList[i][0] = -1;
+		g_iSortedList[i][1] = 0;
+	}
+
+	g_iSortedCount = 0;
+
+	for (int client = 1; client <= MaxClients; client++)
+	{
+		if (!IsClientInGame(client) || !g_iInfectCount[client])
+			continue;
+
+		g_iSortedList[g_iSortedCount][0] = client;
+		g_iSortedList[g_iSortedCount][1] = g_iInfectCount[client];
+		g_iSortedCount++;
+	}
+}
+
 public Action Command_ToggleSkull(int client, int argc)
 {
 	ToggleSkull(client);
+	return Plugin_Handled;
+}
+
+public Action Command_OnToggleStatus(int client, int args)
+{
+	int target = -1;
+
+	if (args != 0)
+	{
+		char sArg[MAX_NAME_LENGTH];
+		GetCmdArg(1, sArg, sizeof(sArg));
+		target = FindTarget(client, sArg, false, true);
+	}
+	else
+		target = client;
+
+	SetGlobalTransTarget(client);
+
+	if (target == -1)
+	{
+		CReplyToCommand(client, "{green}%t {white}%t", "Chat Prefix", "Player no longer available");
+		return Plugin_Handled;
+	}
+
+	UpdateInfectorsList();
+
+	if (target > 0 && target <= MaxClients)
+	{
+		int iDisplayRank = GetClientRank(target);
+		int rank = iDisplayRank - 1;
+
+		if (rank < 0 || rank >= g_iSortedCount)
+			CReplyToCommand(client, "{green}%t {white}%t", "Chat Prefix", "Not ranked");
+		else
+		{
+			char sType[64];
+			if (g_bNemesis)
+				FormatEx(sType, sizeof(sType), "%t", "Killed");
+			else
+				FormatEx(sType, sizeof(sType), "%t", "Infected");
+
+			CReplyToCommand(client, "{green}%t {white}%t", "Chat Prefix", "TopInfector Position", target, iDisplayRank, g_iSortedList[rank][1], sType);
+		}
+	}
 	return Plugin_Handled;
 }
 
@@ -241,80 +311,114 @@ public void Event_OnPlayerSpawn(Event event, const char[] name, bool dontbroadca
 
 public void Event_OnRoundEnd(Event event, char[] name, bool dontBroadcast) 
 {
-	Cleanup(_, true);
-
-	int iSortedList[MAXPLAYERS+1][2];
-	int iSortedCount = 0;
-
-	for (int client = 1; client <= MaxClients; client++)
-	{
-		if (!IsClientInGame(client) || !g_iInfectCount[client])
-			continue;
-
-		iSortedList[iSortedCount][0] = client;
-		iSortedList[iSortedCount][1] = g_iInfectCount[client];
-		iSortedCount++;
-	}
-
-	SortCustom2D(iSortedList, iSortedCount, SortInfectorsList);
-
-	for (int rank = 0; rank < iSortedCount; rank++)
-	{
-		LogMessage("%d - %L (%d)", rank + 1, iSortedList[rank][0], iSortedList[rank][1]);
-	}
-
-	if (!iSortedCount)
+	// ZombieReloaded always fire a team win event before the draw event
+	// So we can ignore the draw event - Prevent duplicate execution
+	if (!IsValidTeamVictory(event))
 		return;
 
-	char sBuffer[512];
-	Format(sBuffer, sizeof(sBuffer), "TOP %s:", g_bNemesis ? "NEMESIS" : "INFECTORS");
+	Cleanup(_, true);
 
+	UpdateInfectorsList();
+
+	SortCustom2D(g_iSortedList, g_iSortedCount, SortInfectorsList);
+
+	for (int rank = 0; rank < g_iSortedCount; rank++)
+	{
+		LogMessage("%d - %L (%d)", rank + 1, g_iSortedList[rank][0], g_iSortedList[rank][1]);
+	}
+
+	if (!g_iSortedCount)
+		return;
+
+	char sType[64];
+	char sBuffer[512], sMenuTitle[128];
+	if (!g_bNemesis)
+		Format(sMenuTitle, sizeof(sMenuTitle), "%t:", "Menu Title Infectors");
+	else
+		Format(sMenuTitle, sizeof(sMenuTitle), "%t:", "Menu Title Nemesis");
+
+	String_ToUpper(sMenuTitle, sBuffer, sizeof(sBuffer));
+
+	if (g_bNemesis)
+		FormatEx(sType, sizeof(sType), "%t", "Killed");
+	else
+		FormatEx(sType, sizeof(sType), "%t", "Infected");
+
+	char sPersonalBuffer[512];
 	for (int i = 0; i < g_cvAmount.IntValue; i++)
 	{
-		if (iSortedList[i][0])
+		if (g_iSortedList[i][0])
 		{
-			g_iTopInfector[iSortedList[i][0]] = i;
-			Format(sBuffer, sizeof(sBuffer), "%s\n%d. %N - %d %s", sBuffer, i + 1, iSortedList[i][0], iSortedList[i][1], g_bNemesis ? "KILLED" : "INFECTED");
+			g_iTopInfector[g_iSortedList[i][0]] = i;
+			Format(sBuffer, sizeof(sBuffer), "%s\n%d. %N - %d %s", sBuffer, i + 1, g_iSortedList[i][0], g_iSortedList[i][1], sType);
 
 			if (g_bNemesis)
-				LogPlayerEvent(iSortedList[i][0], "triggered", i == 0 ? "top_nemesis" : (i == 1 ? "second_nemesis" : (i == 2 ? "third_nemesis" : "super_nemesis")));
+			{
+				switch (i)
+				{
+					case 0: LogPlayerEvent(g_iSortedList[i][0], "triggered", "top_nemesis");
+					case 1: LogPlayerEvent(g_iSortedList[i][0], "triggered", "second_nemesis");
+					case 2: LogPlayerEvent(g_iSortedList[i][0], "triggered", "third_nemesis");
+					case 3: LogPlayerEvent(g_iSortedList[i][0], "triggered", "fourth_nemesis");
+					default: LogPlayerEvent(g_iSortedList[i][0], "triggered", "super_nemesis");
+				}
+			}
 			else
-				LogPlayerEvent(iSortedList[i][0], "triggered", i == 0 ? "top_infector" : (i == 1 ? "second_infector" : (i == 2 ? "third_infector" : "super_infector")));
+			{
+				switch (i)
+				{
+					case 0: LogPlayerEvent(g_iSortedList[i][0], "triggered", "top_infector");
+					case 1: LogPlayerEvent(g_iSortedList[i][0], "triggered", "second_infector");
+					case 2: LogPlayerEvent(g_iSortedList[i][0], "triggered", "third_infector");
+					case 3: LogPlayerEvent(g_iSortedList[i][0], "triggered", "fourth_infector");
+					default: LogPlayerEvent(g_iSortedList[i][0], "triggered", "super_infector");
+				}
+			}
 		}
 	}
 
-	if (g_cvPrint.IntValue <= 0 || g_cvPrint.IntValue == 1)
-		CPrintToChatAll("{darkred}%s", sBuffer);
+	bool bDynamicAvailable = g_bDynamicChannels && CanTestFeatures() && GetFeatureStatus(FeatureType_Native, "GetDynamicChannel") == FeatureStatus_Available;
 
-	bool bDynamicAvailable = false;
-	int iHUDChannel = -1;
-
-	int iChannel = g_cvHUDChannel.IntValue;
-	if (iChannel < 0 || iChannel > 6)
-		iChannel = 2;
-
-	bDynamicAvailable = g_bDynamicChannels && CanTestFeatures() && GetFeatureStatus(FeatureType_Native, "GetDynamicChannel") == FeatureStatus_Available;
+	int iHUDChannel = g_cvHUDChannel.IntValue;
+	if (iHUDChannel < 0 || iHUDChannel > 6)
+		iHUDChannel = 2;
 
 #if defined _DynamicChannels_included_
 	if (bDynamicAvailable)
-		iHUDChannel = GetDynamicChannel(iChannel);
+		iHUDChannel = GetDynamicChannel(iHUDChannel);
 #endif
 
-	if (g_cvPrint.IntValue <= 0 || g_cvPrint.IntValue == 2)
+	// Send messages to clients based on g_cvPrint value
+	for (int i = 1; i <= MaxClients; i++)
 	{
-		SetHudTextParams(g_fPrintPos[0], g_fPrintPos[1], 5.0, g_iPrintColor[0], g_iPrintColor[1], g_iPrintColor[2], 255, 0, 0.0, 0.1, 0.1);
-
-		for (int client = 1; client <= MaxClients; client++)
+		if (IsClientInGame(i))
 		{
-			if (!IsValidClient(client))
-				continue;
+			bool bPersonal = false;
+			int iDisplayRank = GetClientRank(i);
+			int rank = iDisplayRank - 1;
 
-			if (bDynamicAvailable)
-				ShowHudText(client, iHUDChannel, "%s", sBuffer);
-			else
+			// Clear sPersonalBuffer for each client
+			sPersonalBuffer[0] = '\0';
+			if (iDisplayRank > g_cvAmount.IntValue && iDisplayRank <= g_iSortedCount)
 			{
-				ClearSyncHud(client, g_hHudSync);
-				ShowSyncHudText(client, g_hHudSync, "%s", sBuffer);
+				bPersonal = true;
+				Format(sPersonalBuffer, sizeof(sPersonalBuffer), "\n%d. %N - %d %s", iDisplayRank, g_iSortedList[rank][0], g_iSortedList[rank][1], sType);
+			}
+
+			if (g_cvPrint.IntValue <= 0 || g_cvPrint.IntValue == 1)
+				CPrintToChat(i, "{darkred}%s%s", sBuffer, bPersonal ? sPersonalBuffer : "");
+
+			if (g_cvPrint.IntValue <= 0 || g_cvPrint.IntValue == 2)
+			{
+				SetHudTextParams(g_fPrintPos[0], g_fPrintPos[1], 5.0, g_iPrintColor[0], g_iPrintColor[1], g_iPrintColor[2], 255, 0, 0.0, 0.1, 0.1);
+				
+				if (bDynamicAvailable)
+					ShowHudText(i, iHUDChannel, "%s%s", sBuffer, bPersonal ? sPersonalBuffer : "");
+				else
+				{
+					ClearSyncHud(i, g_hHudSync);
+					ShowSyncHudText(i, g_hHudSync, "%s%s", sBuffer, bPersonal ? sPersonalBuffer : "");
+				}
 			}
 		}
 	}
@@ -362,10 +466,7 @@ public void SetPerks(int client, char[] notifHudMsg, char[] notifChatMsg)
 		}
 	}
 
-	if (g_bNemesis)
-		CPrintToChat(client, "{darkred}[TopNemesis] {grey}%s", notifChatMsg);
-	else
-		CPrintToChat(client, "{darkblue}%t {grey}%s", "Chat Prefix", notifChatMsg);
+	CPrintToChat(client, "{darkblue}%t {grey}%s", "Chat Prefix", notifChatMsg);
 
 	GiveGrenadesToClient(client, g_cvHENades.IntValue, GrenadeType_HEGrenade);
 	if (g_bNemesis)
@@ -391,9 +492,15 @@ public Action Timer_OnClientSpawnPost(Handle timer, any client)
 	if (!IsValidClient(client) || !IsPlayerAlive(client) || g_iTopInfector[client] <= -1 || !ZR_IsClientHuman(client))
 		return Plugin_Continue;
 
+	char sType[64];
+	if (g_bNemesis)
+		FormatEx(sType, sizeof(sType), "%t", "Nemesis");
+	else
+		FormatEx(sType, sizeof(sType), "%t", "Infectors");
+
 	char sHudMsg[256], sNotifMsg[256];
-	FormatEx(sHudMsg, sizeof(sHudMsg), "You have been rewarded grenades\nsince you were the Top %s last round!", g_bNemesis ? "Nemesis" : "Infector");
-	FormatEx(sNotifMsg, sizeof(sNotifMsg), "You have been rewarded grenades since you were the Top %s last round!", g_bNemesis ? "Nemesis" : "Infector");
+	FormatEx(sHudMsg, sizeof(sHudMsg), "%t\n%t", "Reward Msg", "The top", sType);
+	FormatEx(sNotifMsg, sizeof(sNotifMsg), "%t %t", "Reward Msg", "The top", sType);
 	SetPerks(client, sHudMsg, sNotifMsg);
 
 	return Plugin_Continue;
@@ -409,7 +516,7 @@ public void CookieMenu_TopInfectors(int client, CookieMenuAction action, any inf
 	{
 		case(CookieMenuAction_DisplayOption):
 		{
-			Format(buffer, maxlen, "%T", "Cookie Menu", client);
+			Format(buffer, maxlen, "%t", "Cookie Menu", client);
 		}
 		case(CookieMenuAction_SelectOption):
 		{
@@ -422,7 +529,7 @@ public void ShowSettingsMenu(int client)
 {
 	Menu menu = new Menu(MenuHandler_MainMenu, MENU_ACTIONS_DEFAULT | MenuAction_DisplayItem);
 
-	menu.SetTitle("%T", "Cookie Menu Title", client);
+	menu.SetTitle("%t", "Cookie Menu Title", client);
 
 	AddMenuItemTranslated(menu, "0", "%t: %t", "Skull", g_bHideSkull[client]  ? "Disabled" : "Enabled");
 
@@ -470,6 +577,8 @@ stock void Cleanup(bool bPluginEnd = false, bool bRoundEnd = false)
 		else
 			g_iInfectCount[client] = 0;
 	}
+
+	UpdateInfectorsList();
 
 	if (bPluginEnd)
 	{
@@ -599,6 +708,18 @@ stock int GetClientGrenades(int client, WeaponAmmoGrenadeType type)
     return GetEntData(client, offsNades);
 }
 
+stock int GetClientRank(int client)
+{
+	int rank = 0;
+	while (rank < g_iSortedCount)
+	{
+		if (g_iSortedList[rank][0] == client)
+			break;
+		rank++;
+	}
+	return rank + 1;
+}
+
 public void GetConVars()
 {
 	char StringPos[2][8];
@@ -634,10 +755,21 @@ bool IsValidZombie(int attacker)
 
 public int Native_IsTopInfector(Handle plugin, int numParams)
 {
+	LogError("Native IsTopInfector() is deprecated, use TopInfectors_GetClientRank() instead.");
 	int client = GetNativeCell(1);
 	if (client && IsClientInGame(client))
 	{
 		return g_iTopInfector[client];
 	}
 	return -1;
+}
+
+public int Native_GetClientRank(Handle plugin, int numParams)
+{
+	int client = GetNativeCell(1);
+
+	if (!client || !IsClientInGame(client))
+		return -1;
+
+	return GetClientRank(client);
 }
