@@ -39,6 +39,7 @@ float g_fPrintPos[2];
 ConVar g_cvHat, g_cvAmount, g_cvHENades, g_cvSmokeNades, g_cvPrint, g_cvPrintPos, g_cvPrintColor, g_cvHUDChannel;
 
 Handle g_hHudSync = INVALID_HANDLE;
+Handle g_hUpdateTimer = INVALID_HANDLE;
 
 bool g_bHideSkull[MAXPLAYERS+1] = { false, ... };
 Handle g_hSpawnTimer[MAXPLAYERS + 1];
@@ -91,6 +92,8 @@ public void OnPluginStart()
 	AutoExecConfig(true);
 	GetConVars();
 
+	UpdateInfectorsList(INVALID_HANDLE);
+
 	HookEvent("round_start", Event_OnRoundStart);
 	HookEvent("round_end", Event_OnRoundEnd);
 	HookEvent("player_spawn", Event_OnPlayerSpawn);
@@ -136,6 +139,8 @@ public void OnMapStart()
 	PrecacheSound(BELL_SOUND_COMMON);
 	PrecacheModel(SKULL_MODEL);
 	AddFilesToDownloadsTable("topinfectors_downloadlist.ini");
+
+	g_hUpdateTimer = CreateTimer(0.5, UpdateInfectorsList, INVALID_HANDLE, TIMER_REPEAT);
 }
 
 public void OnMapEnd()
@@ -143,6 +148,12 @@ public void OnMapEnd()
 	for (int i = 1; i <= MaxClients; i++)
 	{
 		delete g_hSpawnTimer[i];
+	}
+
+	if (g_hUpdateTimer != INVALID_HANDLE)
+	{
+		KillTimer(g_hUpdateTimer);
+		g_hUpdateTimer = INVALID_HANDLE;
 	}
 }
 
@@ -182,7 +193,7 @@ public void OnClientDisconnect(int client)
 	g_iInfectCount[client] = 0;
 }
 
-public void UpdateInfectorsList()
+public Action UpdateInfectorsList(Handle timer)
 {
 	for (int i = 0; i < sizeof(g_iSortedList); i++)
 	{
@@ -201,6 +212,13 @@ public void UpdateInfectorsList()
 		g_iSortedList[g_iSortedCount][1] = g_iInfectCount[client];
 		g_iSortedCount++;
 	}
+
+	SortCustom2D(g_iSortedList, g_iSortedCount, SortInfectorsList);
+
+	if (timer == INVALID_HANDLE)
+		return Plugin_Stop;
+
+	return Plugin_Continue;
 }
 
 public Action Command_ToggleSkull(int client, int argc)
@@ -229,8 +247,6 @@ public Action Command_OnToggleStatus(int client, int args)
 		CReplyToCommand(client, "{green}%t {white}%t", "Chat Prefix", "Player no longer available");
 		return Plugin_Handled;
 	}
-
-	UpdateInfectorsList();
 
 	if (target > 0 && target <= MaxClients)
 	{
@@ -318,9 +334,7 @@ public void Event_OnRoundEnd(Event event, char[] name, bool dontBroadcast)
 
 	Cleanup(_, true);
 
-	UpdateInfectorsList();
-
-	SortCustom2D(g_iSortedList, g_iSortedCount, SortInfectorsList);
+	UpdateInfectorsList(INVALID_HANDLE);
 
 	for (int rank = 0; rank < g_iSortedCount; rank++)
 	{
@@ -577,8 +591,6 @@ stock void Cleanup(bool bPluginEnd = false, bool bRoundEnd = false)
 		else
 			g_iInfectCount[client] = 0;
 	}
-
-	UpdateInfectorsList();
 
 	if (bPluginEnd)
 	{
