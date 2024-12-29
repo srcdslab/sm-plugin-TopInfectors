@@ -9,12 +9,22 @@
 #define _TopInfectors_included
 
 /**
+ * DEPRECATED NATIVE
  * Check if the given client is top infector
  *
  * @param client     Any valid client index.
  * @return           Returns -1 if the client is not a top infector, otherwise it returns its top infector position.
  */
+#pragma deprecated Use TopInfectors_GetClientRank() instead.
 native int IsTopInfector(int client);
+
+/**
+ * Check if the given client is top infector
+ *
+ * @param client     Any valid client index.
+ * @return           Returns -1 if the client is not ingame/ranked, otherwise it returns its top defender position.
+ */
+native int TopInfectors_GetClientRank(int client);
 
 public SharedPlugin __pl_TopInfectors = 
 {
@@ -31,5 +41,6 @@ public SharedPlugin __pl_TopInfectors =
 public void __pl_TopInfectors_SetNTVOptional()
 {
 	MarkNativeAsOptional("TopInfectors_IsTopInfector");
+	MarkNativeAsOptional("TopInfectors_GetClientRank");
 }
 #endif

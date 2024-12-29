@@ -4,6 +4,14 @@
 	{
 		"en"    "[TopInfectors]"
 	}
+	"Menu Title Infectors"
+	{
+		"en"    "Top Infectors"
+	}
+	"Menu Title Nemesis"
+	{
+		"en"    "Top Nemesis"
+	}
 	"Cookie Menu"
 	{
 		"en"    "Top Infectors"
@@ -12,6 +20,14 @@
 	{
 		"en"    "Top Infectors Settings"
 	}
+	"Infectors"
+	{
+		"en"    "Infectors"
+	}
+	"Nemesis"
+	{
+		"en"    "Nemesis"
+	}
 	"Enabled"
 	{
 		"en"    "Enabled"
@@ -19,6 +35,14 @@
 	"Disabled"
 	{
 		"en"    "Disabled"
+	}
+	"Killed"
+	{
+		"en"    "Killed"
+	}
+	"Infected"
+	{
+		"en"    "Infected"
 	}
 	"Skull"
 	{
@@ -31,5 +55,31 @@
 	"Skull Disabled"
 	{
 		"en"    "You will no longer spawn with a skull"
+	}
+	"Bad Target"
+	{
+		"en"	"Invalid target"
+	}
+	"No Target"
+	{
+		"en"	"No target"
+	}
+	"Not ranked"
+	{
+		"en"	"Not ranked yet"
+	}
+	"TopInfector Position"
+	{
+		"#format" "{1:N},{2:d},{3:d},{4:s}"
+		"en"	"{1} is currently Top Infector #{2} with {3} {4}"
+	}
+	"Reward Msg"
+	{
+		"en"	"You have been rewarded grenades."
+	}
+	"The top"
+	{
+		"#format" "{1:s}"
+		"en"    "Since you were the Top {1} last round!"
 	}
 }
