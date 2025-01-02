@@ -53,7 +53,7 @@ public Plugin myinfo =
 	name            =       "Top Infectors",
 	author          =       "Nano, maxime1907, .Rushaway",
 	description     =       "Show top infectors after each round",
-	version         =       "1.4.0",
+	version         =       "1.4.1",
 }
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
@@ -361,7 +361,7 @@ public void Event_OnRoundEnd(Event event, char[] name, bool dontBroadcast)
 	char sPersonalBuffer[512];
 	for (int i = 0; i < g_cvAmount.IntValue; i++)
 	{
-		if (g_iSortedList[i][0])
+		if (g_iSortedList[i][0] > 0 && g_iSortedList[i][0] <= MaxClients)
 		{
 			g_iTopInfector[g_iSortedList[i][0]] = i;
 			Format(sBuffer, sizeof(sBuffer), "%s\n%d. %N - %d %s", sBuffer, i + 1, g_iSortedList[i][0], g_iSortedList[i][1], sType);
