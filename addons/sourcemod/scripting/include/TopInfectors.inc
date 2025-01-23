@@ -8,6 +8,27 @@
 #endif
 #define _TopInfectors_included
 
+#define TopInfectors_V_MAJOR   1
+#define TopInfectors_V_MINOR   5
+#define TopInfectors_V_PATCH   0
+
+#define TopInfectors_VERSION   "1.5.0"
+
+/**
+ * Called when the plugin becomes available.
+ * 
+ * @noreturn
+ */
+forward void TopInfectors_OnPluginOK();
+
+/**
+ * Called when the plugin becomes unavailable.
+ * This can happen when the plugin is paused or unloaded.
+ * 
+ * @noreturn
+ */
+forward void TopInfectors_OnPluginNotOK();
+
 /**
  * DEPRECATED NATIVE
  * Check if the given client is top infector

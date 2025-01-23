@@ -2,6 +2,7 @@
 #include <sdktools>
 #include <sdkhooks>
 #include <zombiereloaded>
+#include <TopInfectors>
 #include <multicolors>
 #include <clientprefs>
 #include <smlib>
@@ -26,6 +27,9 @@ enum WeaponAmmoGrenadeType
 
 #define BELL_SOUND_COMMON   "topinfectors/bell.wav"
 #define SKULL_MODEL         "models/unloze/skull_v3.mdl"
+
+GlobalForward g_hForward_StatusOK;
+GlobalForward g_hForward_StatusNotOK;
 
 int g_iSkullEntity = -1;
 int g_iSortedCount = 0;
@@ -53,13 +57,17 @@ public Plugin myinfo =
 	name            =       "Top Infectors",
 	author          =       "Nano, maxime1907, .Rushaway",
 	description     =       "Show top infectors after each round",
-	version         =       "1.4.1",
+	version         =       TopInfectors_VERSION,
+	url             =       "https://github.com/srcdslab/sm-plugin-TopInfectors"
 }
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
 {
 	CreateNative("TopInfectors_IsTopInfector", Native_IsTopInfector);
 	CreateNative("TopInfectors_GetClientRank", Native_GetClientRank);
+
+	g_hForward_StatusOK = CreateGlobalForward("TopInfectors_OnPluginOK", ET_Ignore);
+	g_hForward_StatusNotOK = CreateGlobalForward("TopInfectors_OnPluginNotOK", ET_Ignore);
 
 	RegPluginLibrary("TopInfectors");
 	return APLRes_Success;
@@ -104,11 +112,23 @@ public void OnPluginStart()
 
 public void OnPluginEnd()
 {
+	SendForward_NotAvailable();
+
 	Cleanup(true);
+}
+
+public void OnPluginPauseChange(bool pause)
+{
+	if (pause)
+		SendForward_NotAvailable();
+	else
+		SendForward_Available();
 }
 
 public void OnAllPluginsLoaded()
 {
+	SendForward_Available();
+
 	g_bNemesis = LibraryExists("Nemesis");
 	g_bDynamicChannels = LibraryExists("DynamicChannels");
 }
@@ -784,4 +804,16 @@ public int Native_GetClientRank(Handle plugin, int numParams)
 		return -1;
 
 	return GetClientRank(client);
+}
+
+stock void SendForward_Available()
+{
+	Call_StartForward(g_hForward_StatusOK);
+	Call_Finish();
+}
+
+stock void SendForward_NotAvailable()
+{
+	Call_StartForward(g_hForward_StatusNotOK);
+	Call_Finish();
 }
