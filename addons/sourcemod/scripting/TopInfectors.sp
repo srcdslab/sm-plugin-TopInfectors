@@ -2,6 +2,7 @@
 #include <sdktools>
 #include <sdkhooks>
 #include <zombiereloaded>
+#include <TopInfectors>
 #include <multicolors>
 #include <clientprefs>
 #include <smlib>
@@ -53,7 +54,8 @@ public Plugin myinfo =
 	name            =       "Top Infectors",
 	author          =       "Nano, maxime1907, .Rushaway",
 	description     =       "Show top infectors after each round",
-	version         =       "1.4.1",
+	version         =       TopInfectors_VERSION,
+	url             =       "https://github.com/srcdslab/sm-plugin-TopInfectors"
 }
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
@@ -67,6 +69,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 
 public void OnPluginStart()
 {
+	LoadTranslations("common.phrases");
 	LoadTranslations("topinfectors.phrases");
 
 	g_cvAmount = CreateConVar("sm_topinfectors_players", "3", "Amount of players on the top infectors table", _, true, 0.0, true, 5.0);
@@ -117,7 +120,7 @@ public void OnLibraryAdded(const char[] name)
 {
 	if (strcmp(name, "Nemesis", false) == 0)
 		g_bNemesis = true;
-	if (strcmp(name, "DynamicChannels", false) == 0)
+	else if (strcmp(name, "DynamicChannels", false) == 0)
 		g_bDynamicChannels = true;
 }
 
@@ -125,7 +128,7 @@ public void OnLibraryRemoved(const char[] name)
 {
 	if (strcmp(name, "Nemesis", false) == 0)
 		g_bNemesis = false;
-	if (strcmp(name, "DynamicChannels", false) == 0)
+	else if (strcmp(name, "DynamicChannels", false) == 0)
 		g_bDynamicChannels = false;
 }
 
@@ -259,9 +262,9 @@ public Action Command_OnToggleStatus(int client, int args)
 		{
 			char sType[64];
 			if (g_bNemesis)
-				FormatEx(sType, sizeof(sType), "%t", "Killed");
+				FormatEx(sType, sizeof(sType), "%t", "Killed", client);
 			else
-				FormatEx(sType, sizeof(sType), "%t", "Infected");
+				FormatEx(sType, sizeof(sType), "%t", "Infected", client);
 
 			CReplyToCommand(client, "{green}%t {white}%t", "Chat Prefix", "TopInfector Position", target, iDisplayRank, g_iSortedList[rank][1], sType);
 		}
@@ -333,7 +336,6 @@ public void Event_OnRoundEnd(Event event, char[] name, bool dontBroadcast)
 		return;
 
 	Cleanup(_, true);
-
 	UpdateInfectorsList(INVALID_HANDLE);
 
 	for (int rank = 0; rank < g_iSortedCount; rank++)
@@ -344,27 +346,11 @@ public void Event_OnRoundEnd(Event event, char[] name, bool dontBroadcast)
 	if (!g_iSortedCount)
 		return;
 
-	char sType[64];
-	char sBuffer[512], sMenuTitle[128];
-	if (!g_bNemesis)
-		Format(sMenuTitle, sizeof(sMenuTitle), "%t:", "Menu Title Infectors");
-	else
-		Format(sMenuTitle, sizeof(sMenuTitle), "%t:", "Menu Title Nemesis");
-
-	String_ToUpper(sMenuTitle, sBuffer, sizeof(sBuffer));
-
-	if (g_bNemesis)
-		FormatEx(sType, sizeof(sType), "%t", "Killed");
-	else
-		FormatEx(sType, sizeof(sType), "%t", "Infected");
-
-	char sPersonalBuffer[512];
 	for (int i = 0; i < g_cvAmount.IntValue; i++)
 	{
 		if (g_iSortedList[i][0] > 0 && g_iSortedList[i][0] <= MaxClients)
 		{
 			g_iTopInfector[g_iSortedList[i][0]] = i;
-			Format(sBuffer, sizeof(sBuffer), "%s\n%d. %N - %d %s", sBuffer, i + 1, g_iSortedList[i][0], g_iSortedList[i][1], sType);
 
 			if (g_bNemesis)
 			{
@@ -405,14 +391,36 @@ public void Event_OnRoundEnd(Event event, char[] name, bool dontBroadcast)
 	// Send messages to clients based on g_cvPrint value
 	for (int i = 1; i <= MaxClients; i++)
 	{
-		if (IsClientInGame(i))
+		if (IsClientInGame(i) && !IsFakeClient(i))
 		{
+			char sMenuTitle[128], sType[64];
+			if (!g_bNemesis)
+			{
+				Format(sMenuTitle, sizeof(sMenuTitle), "%t:", "Menu Title Infectors", i);
+				FormatEx(sType, sizeof(sType), "%t", "Infected", i);
+			}
+			else
+			{
+				Format(sMenuTitle, sizeof(sMenuTitle), "%t:", "Menu Title Nemesis", i);
+				FormatEx(sType, sizeof(sType), "%t", "Killed", i);
+			}
+
+			char sBuffer[512];
+			String_ToUpper(sMenuTitle, sBuffer, sizeof(sBuffer));
+
+			for (int rank = 0; rank < g_cvAmount.IntValue && rank < g_iSortedCount; rank++)
+			{
+				// Create the top infectors list display
+				if (g_iSortedList[rank][0] > 0 && g_iSortedList[rank][0] <= MaxClients)
+					Format(sBuffer, sizeof(sBuffer), "%s\n%d. %N - %d %s", sBuffer, rank + 1, g_iSortedList[rank][0], g_iSortedList[rank][1], sType);
+			}
+
 			bool bPersonal = false;
+			char sPersonalBuffer[512];
+
 			int iDisplayRank = GetClientRank(i);
 			int rank = iDisplayRank - 1;
 
-			// Clear sPersonalBuffer for each client
-			sPersonalBuffer[0] = '\0';
 			if (iDisplayRank > g_cvAmount.IntValue && iDisplayRank <= g_iSortedCount)
 			{
 				bPersonal = true;
@@ -425,7 +433,6 @@ public void Event_OnRoundEnd(Event event, char[] name, bool dontBroadcast)
 			if (g_cvPrint.IntValue <= 0 || g_cvPrint.IntValue == 2)
 			{
 				SetHudTextParams(g_fPrintPos[0], g_fPrintPos[1], 5.0, g_iPrintColor[0], g_iPrintColor[1], g_iPrintColor[2], 255, 0, 0.0, 0.1, 0.1);
-				
 				if (bDynamicAvailable)
 					ShowHudText(i, iHUDChannel, "%s%s", sBuffer, bPersonal ? sPersonalBuffer : "");
 				else
@@ -480,7 +487,9 @@ public void SetPerks(int client, char[] notifHudMsg, char[] notifChatMsg)
 		}
 	}
 
-	CPrintToChat(client, "{darkblue}%t {grey}%s", "Chat Prefix", notifChatMsg);
+	char sPrefix[64];
+	FormatEx(sPrefix, sizeof(sPrefix), "%t", "Chat Prefix", client);
+	CPrintToChat(client, "{darkblue}%s {grey}%s", sPrefix, notifChatMsg);
 
 	GiveGrenadesToClient(client, g_cvHENades.IntValue, GrenadeType_HEGrenade);
 	if (g_bNemesis)
@@ -508,15 +517,19 @@ public Action Timer_OnClientSpawnPost(Handle timer, any client)
 
 	char sType[64];
 	if (g_bNemesis)
-		FormatEx(sType, sizeof(sType), "%t", "Nemesis");
+		FormatEx(sType, sizeof(sType), "%t", "Nemesis", client);
 	else
-		FormatEx(sType, sizeof(sType), "%t", "Infectors");
+		FormatEx(sType, sizeof(sType), "%t", "Infectors", client);
+
+	char sRewardMsg[128], sTheTop[128];
+	FormatEx(sRewardMsg, sizeof(sRewardMsg), "%t", "Reward Msg", client);
+	FormatEx(sTheTop, sizeof(sTheTop), "%t", "The top", sType, client);
 
 	char sHudMsg[256], sNotifMsg[256];
-	FormatEx(sHudMsg, sizeof(sHudMsg), "%t\n%t", "Reward Msg", "The top", sType);
-	FormatEx(sNotifMsg, sizeof(sNotifMsg), "%t %t", "Reward Msg", "The top", sType);
-	SetPerks(client, sHudMsg, sNotifMsg);
+	FormatEx(sHudMsg, sizeof(sHudMsg), "%s\n%s", sRewardMsg, sTheTop);
+	FormatEx(sNotifMsg, sizeof(sNotifMsg), "%s %s", sRewardMsg, sTheTop);
 
+	SetPerks(client, sHudMsg, sNotifMsg);
 	return Plugin_Continue;
 }
 
@@ -628,7 +641,7 @@ stock void ToggleSkull(int client)
 		}
 	}
 
-	CPrintToChat(client, "{darkblue}%t {grey}%t", "Chat Prefix", g_bHideSkull[client] ? "Skull Disabled" : "Skull Enabled");
+	CPrintToChat(client, "{darkblue}%t {grey}%t", "Chat Prefix", g_bHideSkull[client] ? "Skull Disabled" : "Skull Enabled", client);
 }
 
 stock void RemoveHat(int client)
