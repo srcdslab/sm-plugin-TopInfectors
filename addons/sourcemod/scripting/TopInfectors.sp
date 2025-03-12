@@ -28,11 +28,11 @@ enum WeaponAmmoGrenadeType
 #define BELL_SOUND_COMMON   "topinfectors/bell.wav"
 #define SKULL_MODEL         "models/unloze/skull_v3.mdl"
 
-int g_iSkullEntity = -1;
 int g_iSortedCount = 0;
 int g_iSortedList[MAXPLAYERS+1][2];
 int g_iInfectCount[MAXPLAYERS + 1] = { 0, ... };
 int g_iTopInfector[MAXPLAYERS + 1] = { -1, ... };
+int g_iSkullEntities[MAXPLAYERS+1] = { INVALID_ENT_REFERENCE, ... };
 
 int g_iPrintColor[3];
 float g_fPrintPos[2];
@@ -107,6 +107,7 @@ public void OnPluginStart()
 
 public void OnPluginEnd()
 {
+	RemoveAllHats();
 	Cleanup(true);
 }
 
@@ -148,6 +149,8 @@ public void OnMapStart()
 
 public void OnMapEnd()
 {
+	RemoveAllHats();
+
 	for (int i = 1; i <= MaxClients; i++)
 	{
 		delete g_hSpawnTimer[i];
@@ -162,6 +165,8 @@ public void OnMapEnd()
 
 public void OnClientPutInServer(int client)
 {
+	g_iSkullEntities[client] = INVALID_ENT_REFERENCE;
+
 	if (AreClientCookiesCached(client))
 	{
 		GetCookies(client);
@@ -186,6 +191,8 @@ public void OnClientCookiesCached(int client)
 
 public void OnClientDisconnect(int client)
 {
+	RemoveHat(client);
+
 	if (!AreClientCookiesCached(client) || IsFakeClient(client))
 		return;
 
@@ -314,6 +321,7 @@ public void Event_OnClientDeath(Event hEvent, const char[] sEvent, bool bDontBro
 
 public void Event_OnRoundStart(Event event, char[] name, bool dontBroadcast) 
 {
+	RemoveAllHats();
 	Cleanup();
 }
 
@@ -646,28 +654,52 @@ stock void ToggleSkull(int client)
 
 stock void RemoveHat(int client)
 {
-	if (g_iSkullEntity != INVALID_ENT_REFERENCE)
+	if (g_iSkullEntities[client] != INVALID_ENT_REFERENCE)
 	{
-		int iCrownEntity = EntRefToEntIndex(g_iSkullEntity);
-		if (IsValidEntity(iCrownEntity))
-			AcceptEntityInput(iCrownEntity, "Kill");
-		g_iSkullEntity = INVALID_ENT_REFERENCE;
+		int iSkullEntity = EntRefToEntIndex(g_iSkullEntities[client]);
+		if (!IsValidEntity(iSkullEntity))
+			return;
+
+		// We always verify the entity we are going to remove
+		char sModel[128];
+		GetEntPropString(iSkullEntity, Prop_Data, "m_ModelName", sModel, sizeof(sModel));
+
+		// Something went wrong, we should not remove this entity
+		if (strcmp(sModel, SKULL_MODEL, false) != 0)
+		{
+			char sClassName[64];
+			GetEntityClassname(iSkullEntity, sClassName, sizeof(sClassName));
+			LogError("Blocked attempt to remove invalid entity %d (%s) for %L", iSkullEntity, sClassName, client);
+			return;
+		}
+			AcceptEntityInput(iSkullEntity, "Kill");
+		g_iSkullEntities[client] = INVALID_ENT_REFERENCE;
+	}
+}
+
+stock void RemoveAllHats()
+{
+	for (int client = 1; client <= MaxClients; client++)
+	{
+		RemoveHat(client);
 	}
 }
 
 void CreateHat(int client) 
 { 
-	if ((g_iSkullEntity = EntIndexToEntRef(CreateEntityByName("prop_dynamic"))) == INVALID_ENT_REFERENCE)
+	RemoveHat(client);
+
+	if ((g_iSkullEntities[client] = EntIndexToEntRef(CreateEntityByName("prop_dynamic"))) == INVALID_ENT_REFERENCE)
 		return;
 	
-	int iCrownEntity = EntRefToEntIndex(g_iSkullEntity);
-	SetEntityModel(iCrownEntity, SKULL_MODEL);
+	int iSkullEntity = EntRefToEntIndex(g_iSkullEntities[client]);
+	SetEntityModel(iSkullEntity, SKULL_MODEL);
 
-	DispatchKeyValue(iCrownEntity, "solid",                 "0");
-	DispatchKeyValue(iCrownEntity, "modelscale",            "1.3");
-	DispatchKeyValue(iCrownEntity, "disableshadows",        "1");
-	DispatchKeyValue(iCrownEntity, "disablereceiveshadows", "1");
-	DispatchKeyValue(iCrownEntity, "disablebonefollowers",  "1");
+	DispatchKeyValue(iSkullEntity, "solid",                 "0");
+	DispatchKeyValue(iSkullEntity, "modelscale",            "1.3");
+	DispatchKeyValue(iSkullEntity, "disableshadows",        "1");
+	DispatchKeyValue(iSkullEntity, "disablereceiveshadows", "1");
+	DispatchKeyValue(iSkullEntity, "disablebonefollowers",  "1");
 
 	float fVector[3];
 	float fAngles[3];
@@ -678,7 +710,7 @@ void CreateHat(int client)
 	fAngles[0] = 8.0;
 	fAngles[2] = 5.5;
 
-	TeleportEntity(iCrownEntity, fVector, fAngles, NULL_VECTOR);
+	TeleportEntity(iSkullEntity, fVector, fAngles, NULL_VECTOR);
 
 	float fDirection[3];
 	fDirection[0] = 0.0;
@@ -689,7 +721,7 @@ void CreateHat(int client)
 	TE_SendToAll();
 
 	SetVariantString("!activator");
-	AcceptEntityInput(iCrownEntity, "SetParent", client);
+	AcceptEntityInput(iSkullEntity, "SetParent", client);
 }
 
 stock void GiveGrenadesToClient(int client, int iAmount, WeaponAmmoGrenadeType type)
