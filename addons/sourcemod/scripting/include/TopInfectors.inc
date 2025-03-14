@@ -10,7 +10,7 @@
 
 #define TopInfectors_V_MAJOR   "1"
 #define TopInfectors_V_MINOR   "5"
-#define TopInfectors_V_PATCH   "0"
+#define TopInfectors_V_PATCH   "1"
 
 #define TopInfectors_VERSION   TopInfectors_V_MAJOR..."."...TopInfectors_V_MINOR..."."...TopInfectors_V_PATCH
 
