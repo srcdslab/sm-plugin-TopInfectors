@@ -531,7 +531,7 @@ public Action Timer_OnClientSpawnPost(Handle timer, any client)
 
 	char sRewardMsg[128], sTheTop[128];
 	FormatEx(sRewardMsg, sizeof(sRewardMsg), "%t", "Reward Msg", client);
-	FormatEx(sTheTop, sizeof(sTheTop), "%t", "The top", sType, client);
+	FormatEx(sTheTop, sizeof(sTheTop), "%t", "The top", client, sType);
 
 	char sHudMsg[256], sNotifMsg[256];
 	FormatEx(sHudMsg, sizeof(sHudMsg), "%s\n%s", sRewardMsg, sTheTop);
