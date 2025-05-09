@@ -9,6 +9,7 @@
 
 #undef REQUIRE_PLUGIN
 #tryinclude <DynamicChannels>
+#tryinclude <nemesis>
 #define REQUIRE_PLUGIN
 
 #include "loghelper.inc"
@@ -113,23 +114,18 @@ public void OnPluginEnd()
 
 public void OnAllPluginsLoaded()
 {
-	g_bNemesis = LibraryExists("Nemesis");
 	g_bDynamicChannels = LibraryExists("DynamicChannels");
 }
 
 public void OnLibraryAdded(const char[] name)
 {
-	if (strcmp(name, "Nemesis", false) == 0)
-		g_bNemesis = true;
-	else if (strcmp(name, "DynamicChannels", false) == 0)
+	if (strcmp(name, "DynamicChannels", false) == 0)
 		g_bDynamicChannels = true;
 }
 
 public void OnLibraryRemoved(const char[] name)
 {
-	if (strcmp(name, "Nemesis", false) == 0)
-		g_bNemesis = false;
-	else if (strcmp(name, "DynamicChannels", false) == 0)
+	if (strcmp(name, "DynamicChannels", false) == 0)
 		g_bDynamicChannels = false;
 }
 
@@ -631,6 +627,8 @@ stock void Cleanup(bool bPluginEnd = false, bool bRoundEnd = false)
 			if (IsClientConnected(i))
 				OnClientDisconnect(i);
 		}
+
+		g_bNemesis = false;
 	}
 }
 
@@ -830,3 +828,10 @@ public int Native_GetClientRank(Handle plugin, int numParams)
 
 	return GetClientRank(client);
 }
+
+#if defined _nemesis_included
+public void Nemesis_OnConfigVerified(bool configExists)
+{
+	g_bNemesis = configExists;
+}
+#endif
