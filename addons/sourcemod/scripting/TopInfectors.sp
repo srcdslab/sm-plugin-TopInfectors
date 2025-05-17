@@ -80,7 +80,7 @@ public void OnPluginStart()
 	g_cvPrint = CreateConVar("sm_topinfectors_print", "0", "2 - Display in hud, 1 - In chat, 0 - Both", _, true, 0.0, true, 2.0);
 	g_cvPrintPos = CreateConVar("sm_topinfectors_print_position", "0.02 0.42", "The X and Y position for the hud.");
 	g_cvPrintColor = CreateConVar("sm_topinfectors_print_color", "255 0 0", "RGB color value for the hud.");
-	g_cvHUDChannel = CreateConVar("sm_topinfectors_hud_channel", "2", "The channel for the hud if using DynamicChannels", _, true, 0.0, true, 6.0);
+	g_cvHUDChannel = CreateConVar("sm_topinfectors_hud_channel", "2", "The channel for the hud if using DynamicChannels", _, true, 0.0, true, 5.0);
 
 	g_cvPrint.AddChangeHook(OnConVarChange);
 	g_cvPrintPos.AddChangeHook(OnConVarChange);
@@ -384,7 +384,7 @@ public void Event_OnRoundEnd(Event event, char[] name, bool dontBroadcast)
 	bool bDynamicAvailable = g_bDynamicChannels && CanTestFeatures() && GetFeatureStatus(FeatureType_Native, "GetDynamicChannel") == FeatureStatus_Available;
 
 	int iHUDChannel = g_cvHUDChannel.IntValue;
-	if (iHUDChannel < 0 || iHUDChannel > 6)
+	if (iHUDChannel < 0 || iHUDChannel > 5)
 		iHUDChannel = 2;
 
 #if defined _DynamicChannels_included_
