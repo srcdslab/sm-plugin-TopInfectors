@@ -4,7 +4,6 @@
 #include <zombiereloaded>
 #include <TopInfectors>
 #include <multicolors>
-#include <clientprefs>
 #include <smlib>
 
 #undef REQUIRE_PLUGIN
@@ -45,7 +44,6 @@ Handle g_hUpdateTimer = INVALID_HANDLE;
 
 bool g_bHideSkull[MAXPLAYERS+1] = { false, ... };
 Handle g_hSpawnTimer[MAXPLAYERS + 1];
-Handle g_hCookie_HideSkull;
 
 bool g_bNemesis = false;
 bool g_bDynamicChannels = false;
@@ -85,10 +83,6 @@ public void OnPluginStart()
 	g_cvPrint.AddChangeHook(OnConVarChange);
 	g_cvPrintPos.AddChangeHook(OnConVarChange);
 	g_cvPrintColor.AddChangeHook(OnConVarChange);
-
-	g_hCookie_HideSkull  = RegClientCookie("topinfectors_hide_skull",  "", CookieAccess_Private);
-
-	SetCookieMenuItem(CookieMenu_TopInfectors, INVALID_HANDLE, "TopInfectors Settings");
 
 	RegConsoleCmd("sm_toggleskull", Command_ToggleSkull);
 	RegConsoleCmd("sm_tistatus", Command_OnToggleStatus, "Show Top Infector status - sm_tistatus <target|#userid>");
@@ -162,38 +156,11 @@ public void OnMapEnd()
 public void OnClientPutInServer(int client)
 {
 	g_iSkullEntities[client] = INVALID_ENT_REFERENCE;
-
-	if (AreClientCookiesCached(client))
-	{
-		GetCookies(client);
-	}
-}
-
-public void GetCookies(int client)
-{
-	char sBuffer[4];
-	GetClientCookie(client, g_hCookie_HideSkull, sBuffer, sizeof(sBuffer));
-
-	if (sBuffer[0])
-		g_bHideSkull[client] = true;
-	else
-		g_bHideSkull[client] = false;
-}
-
-public void OnClientCookiesCached(int client)
-{
-	GetCookies(client);
 }
 
 public void OnClientDisconnect(int client)
 {
 	RemoveHat(client);
-
-	if (!AreClientCookiesCached(client) || IsFakeClient(client))
-		return;
-
-	SetClientCookie(client, g_hCookie_HideSkull, g_bHideSkull[client] ? "1" : "");
-
 	g_bHideSkull[client] = false;
 	g_iTopInfector[client] = -1;
 	g_iInfectCount[client] = 0;
@@ -535,64 +502,6 @@ public Action Timer_OnClientSpawnPost(Handle timer, any client)
 
 	SetPerks(client, sHudMsg, sNotifMsg);
 	return Plugin_Continue;
-}
-
-//---------------------------------------
-// Purpose: Menus
-//---------------------------------------
-
-public void CookieMenu_TopInfectors(int client, CookieMenuAction action, any info, char[] buffer, int maxlen)
-{
-	switch(action)
-	{
-		case(CookieMenuAction_DisplayOption):
-		{
-			Format(buffer, maxlen, "%t", "Cookie Menu", client);
-		}
-		case(CookieMenuAction_SelectOption):
-		{
-			ShowSettingsMenu(client);
-		}
-	}
-}
-
-public void ShowSettingsMenu(int client)
-{
-	Menu menu = new Menu(MenuHandler_MainMenu, MENU_ACTIONS_DEFAULT | MenuAction_DisplayItem);
-
-	menu.SetTitle("%t", "Cookie Menu Title", client);
-
-	AddMenuItemTranslated(menu, "0", "%t: %t", "Skull", g_bHideSkull[client]  ? "Disabled" : "Enabled");
-
-	menu.ExitBackButton = true;
-	menu.ExitButton = true;
-
-	menu.Display(client, MENU_TIME_FOREVER);
-}
-
-public int MenuHandler_MainMenu(Menu menu, MenuAction action, int client, int selection)
-{
-	switch (action)
-	{
-		case (MenuAction_Select):
-		{
-			switch (selection)
-			{
-				case (0): ToggleSkull(client);
-			}
-
-			ShowSettingsMenu(client);
-		}
-		case (MenuAction_Cancel):
-		{
-			ShowCookieMenu(client);
-		}
-		case (MenuAction_End):
-		{
-			delete menu;
-		}
-	}
-	return 0;
 }
 
 //---------------------------------------
