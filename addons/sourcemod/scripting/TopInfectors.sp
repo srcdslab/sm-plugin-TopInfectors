@@ -100,6 +100,11 @@ public void OnPluginStart()
 	g_hHudSync = CreateHudSynchronizer();
 }
 
+public void OnPluginEnd()
+{
+	RemoveAllHats();
+}
+
 public void OnAllPluginsLoaded()
 {
 	g_bDynamicChannels = LibraryExists("DynamicChannels");
