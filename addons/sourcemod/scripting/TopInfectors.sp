@@ -103,7 +103,6 @@ public void OnPluginStart()
 public void OnPluginEnd()
 {
 	RemoveAllHats();
-	Cleanup(true);
 }
 
 public void OnAllPluginsLoaded()
@@ -306,7 +305,7 @@ public void Event_OnRoundEnd(Event event, char[] name, bool dontBroadcast)
 	if (!IsValidTeamVictory(event))
 		return;
 
-	Cleanup(_, true);
+	Cleanup(true);
 	UpdateInfectorsList(INVALID_HANDLE);
 
 	for (int rank = 0; rank < g_iSortedCount; rank++)
@@ -508,7 +507,7 @@ public Action Timer_OnClientSpawnPost(Handle timer, any client)
 // Purpose: Functions
 //---------------------------------------
 
-stock void Cleanup(bool bPluginEnd = false, bool bRoundEnd = false)
+stock void Cleanup(bool bRoundEnd = false)
 {
 	for (int client = 1; client <= MaxClients; client++)
 	{
@@ -516,28 +515,6 @@ stock void Cleanup(bool bPluginEnd = false, bool bRoundEnd = false)
 			g_iTopInfector[client] = -1;
 		else
 			g_iInfectCount[client] = 0;
-	}
-
-	if (bPluginEnd)
-	{
-		UnhookEvent("round_start", Event_OnRoundStart);
-		UnhookEvent("round_end", Event_OnRoundEnd);
-		UnhookEvent("player_spawn", Event_OnPlayerSpawn);
-		UnhookEvent("player_death", Event_OnClientDeath);
-
-		if (g_hHudSync != INVALID_HANDLE)
-		{
-			CloseHandle(g_hHudSync);
-			g_hHudSync = INVALID_HANDLE;
-		}
-
-		for (int i = 1; i <= MaxClients; i++)
-		{
-			if (IsClientConnected(i))
-				OnClientDisconnect(i);
-		}
-
-		g_bNemesis = false;
 	}
 }
 
