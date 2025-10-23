@@ -163,7 +163,7 @@ public void OnClientDisconnect(int client)
 	g_bHideSkull[client] = false;
 	g_iTopInfector[client] = -1;
 	g_iInfectCount[client] = 0;
-	delete g_hSpawnTimer[client];
+	g_hSpawnTimer[client] = null;
 }
 
 public Action UpdateInfectorsList(Handle timer)
