@@ -10,7 +10,7 @@
 
 #define TopInfectors_V_MAJOR   "1"
 #define TopInfectors_V_MINOR   "5"
-#define TopInfectors_V_PATCH   "7"
+#define TopInfectors_V_PATCH   "8"
 
 #define TopInfectors_VERSION   TopInfectors_V_MAJOR..."."...TopInfectors_V_MINOR..."."...TopInfectors_V_PATCH
 
@@ -49,4 +49,5 @@ public void __pl_TopInfectors_SetNTVOptional()
 	MarkNativeAsOptional("TopInfectors_IsTopInfector");
 	MarkNativeAsOptional("TopInfectors_GetClientRank");
 }
+
 #endif
