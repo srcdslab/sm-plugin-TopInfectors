@@ -295,7 +295,7 @@ public void Event_OnPlayerSpawn(Event event, const char[] name, bool dontbroadca
 		return;
 	
 	delete g_hSpawnTimer[client];
-	g_hSpawnTimer[client] = CreateTimer(7.0, Timer_OnClientSpawnPost, client);
+	g_hSpawnTimer[client] = CreateTimer(7.0, Timer_OnClientSpawnPost, GetClientUserId(client));
 }
 
 public void Event_OnRoundEnd(Event event, char[] name, bool dontBroadcast) 
@@ -366,13 +366,13 @@ public void Event_OnRoundEnd(Event event, char[] name, bool dontBroadcast)
 			char sMenuTitle[128], sType[64];
 			if (!g_bNemesis)
 			{
-				Format(sMenuTitle, sizeof(sMenuTitle), "%t:", "Menu Title Infectors", i);
-				FormatEx(sType, sizeof(sType), "%t", "Infected", i);
+				Format(sMenuTitle, sizeof(sMenuTitle), "%T:", "Menu Title Infectors", i);
+				FormatEx(sType, sizeof(sType), "%T", "Infected", i);
 			}
 			else
 			{
-				Format(sMenuTitle, sizeof(sMenuTitle), "%t:", "Menu Title Nemesis", i);
-				FormatEx(sType, sizeof(sType), "%t", "Killed", i);
+				Format(sMenuTitle, sizeof(sMenuTitle), "%T:", "Menu Title Nemesis", i);
+				FormatEx(sType, sizeof(sType), "%T", "Killed", i);
 			}
 
 			char sBuffer[512];
@@ -458,7 +458,7 @@ public void SetPerks(int client, char[] notifHudMsg, char[] notifChatMsg)
 	}
 
 	char sPrefix[64];
-	FormatEx(sPrefix, sizeof(sPrefix), "%t", "Chat Prefix", client);
+	FormatEx(sPrefix, sizeof(sPrefix), "%T", "Chat Prefix", client);
 	CPrintToChat(client, "{darkblue}%s {grey}%s", sPrefix, notifChatMsg);
 
 	GiveGrenadesToClient(client, g_cvHENades.IntValue, GrenadeType_HEGrenade);
@@ -479,21 +479,27 @@ public void SetPerks(int client, char[] notifHudMsg, char[] notifChatMsg)
 // Purpose: Timers
 //---------------------------------------
 
-public Action Timer_OnClientSpawnPost(Handle timer, any client)
+public Action Timer_OnClientSpawnPost(Handle timer, int userid)
 {
+	int client = GetClientOfUserId(userid);
+	if (!client)
+		return Plugin_Continue;
+	
 	g_hSpawnTimer[client] = null;
 	if (!IsValidClient(client) || !IsPlayerAlive(client) || g_iTopInfector[client] <= -1 || !ZR_IsClientHuman(client))
 		return Plugin_Continue;
 
+	SetGlobalTransTarget(client);
+	
 	char sType[64];
 	if (g_bNemesis)
-		FormatEx(sType, sizeof(sType), "%t", "Nemesis", client);
+		FormatEx(sType, sizeof(sType), "%t", "Nemesis");
 	else
-		FormatEx(sType, sizeof(sType), "%t", "Infectors", client);
+		FormatEx(sType, sizeof(sType), "%t", "Infectors");
 
 	char sRewardMsg[128], sTheTop[128];
-	FormatEx(sRewardMsg, sizeof(sRewardMsg), "%t", "Reward Msg", client);
-	FormatEx(sTheTop, sizeof(sTheTop), "%t", "The top", sType, client);
+	FormatEx(sRewardMsg, sizeof(sRewardMsg), "%t", "Reward Msg");
+	FormatEx(sTheTop, sizeof(sTheTop), "%t", "The top", sType);
 
 	char sHudMsg[256], sNotifMsg[256];
 	FormatEx(sHudMsg, sizeof(sHudMsg), "%s\n%s", sRewardMsg, sTheTop);
@@ -533,7 +539,7 @@ stock void ToggleSkull(int client)
 		}
 	}
 
-	CPrintToChat(client, "{darkblue}%t {grey}%t", "Chat Prefix", g_bHideSkull[client] ? "Skull Disabled" : "Skull Enabled", client);
+	CPrintToChat(client, "{darkblue}%t {grey}%t", "Chat Prefix", g_bHideSkull[client] ? "Skull Disabled" : "Skull Enabled");
 }
 
 stock void RemoveHat(int client)
