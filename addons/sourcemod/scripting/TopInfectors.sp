@@ -163,6 +163,7 @@ public void OnClientDisconnect(int client)
 	g_bHideSkull[client] = false;
 	g_iTopInfector[client] = -1;
 	g_iInfectCount[client] = 0;
+	delete g_hSpawnTimer[client];
 }
 
 public Action UpdateInfectorsList(Handle timer)
@@ -295,7 +296,7 @@ public void Event_OnPlayerSpawn(Event event, const char[] name, bool dontbroadca
 		return;
 	
 	delete g_hSpawnTimer[client];
-	g_hSpawnTimer[client] = CreateTimer(7.0, Timer_OnClientSpawnPost, GetClientUserId(client));
+	g_hSpawnTimer[client] = CreateTimer(7.0, Timer_OnClientSpawnPost, GetClientUserId(client), TIMER_FLAG_NO_MAPCHANGE);
 }
 
 public void Event_OnRoundEnd(Event event, char[] name, bool dontBroadcast) 
@@ -484,13 +485,13 @@ public Action Timer_OnClientSpawnPost(Handle timer, int userid)
 	int client = GetClientOfUserId(userid);
 	if (!client)
 		return Plugin_Continue;
-	
+
 	g_hSpawnTimer[client] = null;
 	if (!IsValidClient(client) || !IsPlayerAlive(client) || g_iTopInfector[client] <= -1 || !ZR_IsClientHuman(client))
 		return Plugin_Continue;
 
 	SetGlobalTransTarget(client);
-	
+
 	char sType[64];
 	if (g_bNemesis)
 		FormatEx(sType, sizeof(sType), "%t", "Nemesis");
