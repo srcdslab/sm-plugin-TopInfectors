@@ -142,7 +142,7 @@ public void OnMapEnd()
 
 	for (int i = 1; i <= MaxClients; i++)
 	{
-		delete g_hSpawnTimer[i];
+		g_hSpawnTimer[i] = null;
 	}
 
 	if (g_hUpdateTimer != INVALID_HANDLE)
@@ -163,7 +163,7 @@ public void OnClientDisconnect(int client)
 	g_bHideSkull[client] = false;
 	g_iTopInfector[client] = -1;
 	g_iInfectCount[client] = 0;
-	g_hSpawnTimer[client] = null;
+	delete g_hSpawnTimer[client];
 }
 
 public Action UpdateInfectorsList(Handle timer)
