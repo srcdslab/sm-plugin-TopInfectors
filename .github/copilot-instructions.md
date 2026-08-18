@@ -16,8 +16,8 @@ This repository contains the **TopInfectors** SourcePawn plugin for SourceMod, d
 ## Technical Stack
 
 - **Language**: SourcePawn
-- **Platform**: SourceMod 1.11+ (configured for 1.11.0-git6934)
-- **Build System**: SourceKnight 0.2
+- **Platform**: SourceMod 1.12.x
+- **Build System**: Native GitHub Actions (spcomp via rumblefrog/setup-sp)
 - **Target Games**: Source Engine games with zombie infection modes
 - **Dependencies**: Multiple SourceMod extensions and plugins
 
@@ -37,37 +37,34 @@ This repository contains the **TopInfectors** SourcePawn plugin for SourceMod, d
 │       └── topinfectors.phrases.txt  # Multi-language strings
 ├── materials/models/unloze/skull/ # Texture files for skull model
 ├── models/unloze/                # 3D skull model files
-├── sound/topinfectors/           # Audio assets
-└── sourceknight.yaml            # Build configuration & dependencies
+└── sound/topinfectors/           # Audio assets
 ```
 
 ## Build System
 
-This project uses **SourceKnight** for dependency management and building, not direct spcomp compilation.
+This project builds via **native GitHub Actions** using `spcomp` directly (see `.github/workflows/ci.yml`). There is no local build tool required; dependencies are cloned from source in CI.
 
 ### Building the Plugin
 ```bash
-# Using SourceKnight directly (if available)
-sourceknight build
-
-# Via GitHub Actions (recommended)
-# Push to main/master branch or create PR - CI will build automatically
+# Push to main/master branch or open a PR - CI will build automatically
+# To build locally, install SourceMod 1.12.x, clone the git dependencies below
+# into include paths, then run:
+spcomp -i include -o TopInfectors.smx TopInfectors.sp
 ```
 
-### Dependencies (Auto-managed via SourceKnight)
-- **sourcemod**: Core SourceMod framework (1.11.0-git6934)
-- **multicolors**: Enhanced chat color formatting
-- **zombiereloaded**: Zombie infection game mode framework
-- **loghelper**: Logging utilities
-- **utilshelper**: Common utility functions  
-- **smlib**: Extended SourceMod library functions
-- **dynamicchannels**: Dynamic HUD channel management (optional)
+### Dependencies (Cloned and compiled against in CI)
+- **SourceMod**: 1.12.x (via rumblefrog/setup-sp)
+- **multicolors**: Enhanced chat color formatting (srcdslab/sm-plugin-MultiColors)
+- **zombiereloaded**: Zombie infection game mode framework (srcdslab/sm-plugin-zombiereloaded)
+- **loghelper**: Logging utilities (srcdslab/sm-plugin-LogHelper)
+- **utilshelper**: Common utility functions (srcdslab/sm-plugin-UtilsHelper)
+- **smlib**: Extended SourceMod library functions (srcdslab/sm-plugin-smlib)
+- **dynamicchannels**: Dynamic HUD channel management (srcdslab/sm-plugin-DynamicChannels)
 
 ### Key Files to Understand
-1. **sourceknight.yaml**: Build configuration, dependencies, and targets
+1. **.github/workflows/ci.yml**: Dependency install, build, package, and release pipeline
 2. **TopInfectors.sp**: Main plugin logic (746 lines)
 3. **TopInfectors.inc**: Native function definitions for other plugins
-4. **.github/workflows/ci.yml**: Automated build, test, and release pipeline
 
 ## Development Guidelines
 
@@ -232,8 +229,8 @@ TopInfectors-{version}.tar.gz
 ```
 
 ### CI/CD Pipeline
-1. **Build**: Compiles plugin via SourceKnight action
-2. **Package**: Creates release archive with all assets
+1. **Build**: Compiles plugin directly with spcomp after cloning include dependencies
+2. **Package**: Creates release archive with plugin and configs
 3. **Release**: Auto-publishes to GitHub releases for tags/master
 
 ## Integration Points
@@ -273,7 +270,7 @@ TopInfectors-{version}.tar.gz
 ### High-Impact Files
 - **TopInfectors.sp**: Main plugin logic - test thoroughly after changes
 - **TopInfectors.inc**: API changes affect dependent plugins
-- **sourceknight.yaml**: Dependency changes require full rebuild
+- **.github/workflows/ci.yml**: Dependency changes require updating the clone list
 
 ### Safe Modifications
 - **topinfectors.phrases.txt**: Translation updates (test with `sm_lang` changes)
