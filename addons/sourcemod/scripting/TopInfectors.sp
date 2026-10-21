@@ -39,8 +39,8 @@ float g_fPrintPos[2];
 
 ConVar g_cvHat, g_cvAmount, g_cvHENades, g_cvSmokeNades, g_cvPrint, g_cvPrintPos, g_cvPrintColor, g_cvHUDChannel;
 
-Handle g_hHudSync = INVALID_HANDLE;
-Handle g_hUpdateTimer = INVALID_HANDLE;
+Handle g_hHudSync = null;
+Handle g_hUpdateTimer = null;
 
 bool g_bHideSkull[MAXPLAYERS+1] = { false, ... };
 Handle g_hSpawnTimer[MAXPLAYERS + 1];
@@ -90,7 +90,7 @@ public void OnPluginStart()
 	AutoExecConfig(true);
 	GetConVars();
 
-	UpdateInfectorsList(INVALID_HANDLE);
+	UpdateInfectorsList(null);
 
 	HookEvent("round_start", Event_OnRoundStart);
 	HookEvent("round_end", Event_OnRoundEnd);
@@ -133,7 +133,7 @@ public void OnMapStart()
 	PrecacheModel(SKULL_MODEL);
 	AddFilesToDownloadsTable("topinfectors_downloadlist.ini");
 
-	g_hUpdateTimer = CreateTimer(0.5, UpdateInfectorsList, INVALID_HANDLE, TIMER_REPEAT);
+	g_hUpdateTimer = CreateTimer(0.5, UpdateInfectorsList, _, TIMER_REPEAT);
 }
 
 public void OnMapEnd()
@@ -145,10 +145,9 @@ public void OnMapEnd()
 		g_hSpawnTimer[i] = null;
 	}
 
-	if (g_hUpdateTimer != INVALID_HANDLE)
+	if (g_hUpdateTimer != null)
 	{
-		KillTimer(g_hUpdateTimer);
-		g_hUpdateTimer = INVALID_HANDLE;
+		delete g_hUpdateTimer;
 	}
 }
 
@@ -188,7 +187,7 @@ public Action UpdateInfectorsList(Handle timer)
 
 	SortCustom2D(g_iSortedList, g_iSortedCount, SortInfectorsList);
 
-	if (timer == INVALID_HANDLE)
+	if (timer == null)
 		return Plugin_Stop;
 
 	return Plugin_Continue;
@@ -307,7 +306,7 @@ public void Event_OnRoundEnd(Event event, char[] name, bool dontBroadcast)
 		return;
 
 	Cleanup(true);
-	UpdateInfectorsList(INVALID_HANDLE);
+	UpdateInfectorsList(null);
 
 	for (int rank = 0; rank < g_iSortedCount; rank++)
 	{
@@ -423,37 +422,39 @@ public void SetPerks(int client, char[] notifHudMsg, char[] notifChatMsg)
 	{
 		if (GetUserMessageType() == UM_Protobuf)
 		{
-			PbSetInt(hMessageInfection, "channel", 50);
-			PbSetInt(hMessageInfection, "effect", 0);
-			PbSetColor(hMessageInfection, "clr1", {255, 255, 255, 255});
-			PbSetColor(hMessageInfection, "clr2", {255, 255, 255, 255});
-			PbSetVector2D(hMessageInfection, "pos", view_as<float>({-1.0, 0.2}));
-			PbSetFloat(hMessageInfection, "fade_in_time", 0.1);
-			PbSetFloat(hMessageInfection, "fade_out_time", 0.1);
-			PbSetFloat(hMessageInfection, "hold_time", 5.0);
-			PbSetFloat(hMessageInfection, "fx_time", 0.0);
-			PbSetString(hMessageInfection, "text", notifHudMsg);
+			Protobuf pb = UserMessageToProtobuf(hMessageInfection);
+			pb.SetInt("channel", 50);
+			pb.SetInt("effect", 0);
+			pb.SetColor("clr1", {255, 255, 255, 255});
+			pb.SetColor("clr2", {255, 255, 255, 255});
+			pb.SetVector2D("pos", view_as<float>({-1.0, 0.2}));
+			pb.SetFloat("fade_in_time", 0.1);
+			pb.SetFloat("fade_out_time", 0.1);
+			pb.SetFloat("hold_time", 5.0);
+			pb.SetFloat("fx_time", 0.0);
+			pb.SetString("text", notifHudMsg);
 			EndMessage();
 		}
 		else
 		{
-			BfWriteByte(hMessageInfection, 50);
-			BfWriteFloat(hMessageInfection, -1.0);
-			BfWriteFloat(hMessageInfection, 0.2);
-			BfWriteByte(hMessageInfection, 0);
-			BfWriteByte(hMessageInfection, 255);
-			BfWriteByte(hMessageInfection, 255);
-			BfWriteByte(hMessageInfection, 255);
-			BfWriteByte(hMessageInfection, 255);
-			BfWriteByte(hMessageInfection, 255);
-			BfWriteByte(hMessageInfection, 255);
-			BfWriteByte(hMessageInfection, 255);
-			BfWriteByte(hMessageInfection, 0);
-			BfWriteFloat(hMessageInfection, 0.1);
-			BfWriteFloat(hMessageInfection, 0.1);
-			BfWriteFloat(hMessageInfection, 5.0);
-			BfWriteFloat(hMessageInfection, 0.0);
-			BfWriteString(hMessageInfection, notifHudMsg);
+			BfWrite bf = UserMessageToBfWrite(hMessageInfection);
+			bf.WriteByte(50);
+			bf.WriteFloat(-1.0);
+			bf.WriteFloat(0.2);
+			bf.WriteByte(0);
+			bf.WriteByte(255);
+			bf.WriteByte(255);
+			bf.WriteByte(255);
+			bf.WriteByte(255);
+			bf.WriteByte(255);
+			bf.WriteByte(255);
+			bf.WriteByte(255);
+			bf.WriteByte(0);
+			bf.WriteFloat(0.1);
+			bf.WriteFloat(0.1);
+			bf.WriteFloat(5.0);
+			bf.WriteFloat(0.0);
+			bf.WriteString(notifHudMsg);
 			EndMessage();
 		}
 	}
@@ -470,7 +471,7 @@ public void SetPerks(int client, char[] notifHudMsg, char[] notifChatMsg)
 		return;
 
 	EmitSoundToClient(client, BELL_SOUND_COMMON, .volume=1.0);
-	if (GetConVarInt(g_cvHat) == 1)
+	if (g_cvHat.IntValue == 1)
 	{
 		CreateHat(client);
 	}
@@ -534,7 +535,7 @@ stock void ToggleSkull(int client)
 	}
 	else if (!g_bHideSkull[client] && IsValidClient(client) && IsPlayerAlive(client) && g_iTopInfector[client] == 0)
 	{
-		if (GetConVarInt(g_cvHat) == 1)
+		if (g_cvHat.IntValue == 1)
 		{
 			CreateHat(client);
 		}
