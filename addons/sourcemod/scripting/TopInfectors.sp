@@ -195,6 +195,12 @@ public Action UpdateInfectorsList(Handle timer)
 
 public Action Command_ToggleSkull(int client, int argc)
 {
+	if (!client)
+	{
+		CReplyToCommand(client, "{darkblue}%t {grey}%t", "Chat Prefix", "Command is in-game only");
+		return Plugin_Handled;
+	}
+
 	ToggleSkull(client);
 	return Plugin_Handled;
 }
@@ -231,11 +237,11 @@ public Action Command_OnToggleStatus(int client, int args)
 		{
 			char sType[64];
 			if (g_bNemesis)
-				FormatEx(sType, sizeof(sType), "%t", "Killed", client);
+				FormatEx(sType, sizeof(sType), "%t", "Killed");
 			else
-				FormatEx(sType, sizeof(sType), "%t", "Infected", client);
+				FormatEx(sType, sizeof(sType), "%t", "Infected");
 
-			CReplyToCommand(client, "{green}%t {white}%t", "Chat Prefix", "TopInfector Position", target, iDisplayRank, g_iSortedList[rank][1], sType);
+			CReplyToCommand(client, "{green}%t {white}%t", "Chat Prefix", g_bNemesis ? "TopNemesis Position" : "TopInfector Position", target, iDisplayRank, g_iSortedList[rank][1], sType);
 		}
 	}
 	return Plugin_Handled;
@@ -363,20 +369,17 @@ public void Event_OnRoundEnd(Event event, char[] name, bool dontBroadcast)
 	{
 		if (IsClientInGame(i) && !IsFakeClient(i))
 		{
-			char sMenuTitle[128], sType[64];
+			char sBuffer[512], sType[64];
 			if (!g_bNemesis)
 			{
-				Format(sMenuTitle, sizeof(sMenuTitle), "%T:", "Menu Title Infectors", i);
+				Format(sBuffer, sizeof(sBuffer), "%T:", "Menu Title Infectors", i);
 				FormatEx(sType, sizeof(sType), "%T", "Infected", i);
 			}
 			else
 			{
-				Format(sMenuTitle, sizeof(sMenuTitle), "%T:", "Menu Title Nemesis", i);
+				Format(sBuffer, sizeof(sBuffer), "%T:", "Menu Title Nemesis", i);
 				FormatEx(sType, sizeof(sType), "%T", "Killed", i);
 			}
-
-			char sBuffer[512];
-			String_ToUpper(sMenuTitle, sBuffer, sizeof(sBuffer));
 
 			for (int rank = 0; rank < g_cvAmount.IntValue && rank < g_iSortedCount; rank++)
 			{
