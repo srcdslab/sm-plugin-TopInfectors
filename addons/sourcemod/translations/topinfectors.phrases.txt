@@ -12,43 +12,23 @@
 	}
 	"Menu Title Infectors"
 	{
-		"en"    "Top Infectors"
-		"fr"    "Top infecteurs"
-		"ru"    "Топ заражающих"
-		"es"    "Top infectores"
-		"de"    "Top-Infizierer"
-		"pt"    "Top infectadores"
+		"en"    "TOP INFECTORS"
+		"fr"    "TOP INFECTEURS"
+		"ru"    "ТОП ЗАРАЖАЮЩИХ"
+		"es"    "TOP INFECTORES"
+		"de"    "TOP-INFIZIERER"
+		"pt"    "TOP INFECTADORES"
 		"chi"   "感染者排行"
 	}
 	"Menu Title Nemesis"
 	{
-		"en"    "Top Nemesis"
-		"fr"    "Top Nemesis"
-		"ru"    "Топ Немезисов"
-		"es"    "Top Nemesis"
-		"de"    "Top-Nemesis"
-		"pt"    "Top Nemesis"
+		"en"    "TOP NEMESIS"
+		"fr"    "TOP NEMESIS"
+		"ru"    "ТОП НЕМЕЗИСОВ"
+		"es"    "TOP NEMESIS"
+		"de"    "TOP-NEMESIS"
+		"pt"    "TOP NEMESIS"
 		"chi"   "复仇者排行"
-	}
-	"Cookie Menu"
-	{
-		"en"    "Top Infectors"
-		"fr"    "Top infecteurs"
-		"ru"    "Топ заражающих"
-		"es"    "Top infectores"
-		"de"    "Top-Infizierer"
-		"pt"    "Top infectadores"
-		"chi"   "感染者排行"
-	}
-	"Cookie Menu Title"
-	{
-		"en"    "Top Infectors Settings"
-		"fr"    "Paramètres Top infecteurs"
-		"ru"    "Настройки Топ заражающих"
-		"es"    "Ajustes de Top infectores"
-		"de"    "Top-Infizierer-Einstellungen"
-		"pt"    "Configurações do Top infectadores"
-		"chi"   "感染者排行设置"
 	}
 	"Infectors"
 	{
@@ -70,26 +50,6 @@
 		"pt"    "Nemesis"
 		"chi"   "复仇者"
 	}
-	"Enabled"
-	{
-		"en"    "Enabled"
-		"fr"    "Activé"
-		"ru"    "Включено"
-		"es"    "Activado"
-		"de"    "Aktiviert"
-		"pt"    "Ativado"
-		"chi"   "已启用"
-	}
-	"Disabled"
-	{
-		"en"    "Disabled"
-		"fr"    "Désactivé"
-		"ru"    "Выключено"
-		"es"    "Desactivado"
-		"de"    "Deaktiviert"
-		"pt"    "Desativado"
-		"chi"   "已禁用"
-	}
 	"Killed"
 	{
 		"en"    "Killed"
@@ -109,16 +69,6 @@
 		"de"    "Infektionen"
 		"pt"    "infectados"
 		"chi"   "感染"
-	}
-	"Skull"
-	{
-		"en"    "Skull"
-		"fr"    "Crâne"
-		"ru"    "Череп"
-		"es"    "Calavera"
-		"de"    "Totenkopf"
-		"pt"    "Caveira"
-		"chi"   "骷髅"
 	}
 	"Skull Enabled"
 	{
@@ -140,26 +90,6 @@
 		"pt"    "Você não nascerá mais com uma caveira"
 		"chi"   "你将不再带着骷髅重生"
 	}
-	"Bad Target"
-	{
-		"en"	"Invalid target"
-		"fr"	"Cible invalide"
-		"ru"	"Неверная цель"
-		"es"	"Objetivo no válido"
-		"de"	"Ungültiges Ziel"
-		"pt"	"Alvo inválido"
-		"chi"	"无效目标"
-	}
-	"No Target"
-	{
-		"en"	"No target"
-		"fr"	"Aucune cible"
-		"ru"	"Нет цели"
-		"es"	"Sin objetivo"
-		"de"	"Kein Ziel"
-		"pt"	"Nenhum alvo"
-		"chi"	"没有目标"
-	}
 	"Not ranked"
 	{
 		"en"	"Not ranked yet"
@@ -180,6 +110,17 @@
 		"de"	"{1} ist aktuell Top-Infizierer #{2} mit {3} {4}"
 		"pt"	"{1} é atualmente o Top infectador #{2} com {3} {4}"
 		"chi"	"{1} 目前位列感染者排行第 {2} 名（{3} {4}）"
+	}
+	"TopNemesis Position"
+	{
+		"#format" "{1:N},{2:d},{3:d},{4:s}"
+		"en"	"{1} is currently Top Nemesis #{2} with {3} {4}"
+		"fr"	"{1} est actuellement Top Nemesis #{2} avec {3} {4}"
+		"ru"	"{1} сейчас на {2}-м месте в топе Немезисов: {3} {4}"
+		"es"	"{1} es actualmente Top Nemesis #{2} con {3} {4}"
+		"de"	"{1} ist aktuell Top-Nemesis #{2} mit {3} {4}"
+		"pt"	"{1} é atualmente o Top Nemesis #{2} com {3} {4}"
+		"chi"	"{1} 目前位列复仇者排行第 {2} 名（{3} {4}）"
 	}
 	"Reward Msg"
 	{
