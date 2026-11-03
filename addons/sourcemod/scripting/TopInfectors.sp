@@ -195,12 +195,6 @@ public Action UpdateInfectorsList(Handle timer)
 
 public Action Command_ToggleSkull(int client, int argc)
 {
-	if (!client)
-	{
-		CReplyToCommand(client, "{darkblue}%t {grey}%t", "Chat Prefix", "Command is in-game only");
-		return Plugin_Handled;
-	}
-
 	ToggleSkull(client);
 	return Plugin_Handled;
 }
