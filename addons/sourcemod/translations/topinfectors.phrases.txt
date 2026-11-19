@@ -9,6 +9,12 @@
 		"de"    "[TopInfectors]"
 		"pt"    "[TopInfectors]"
 		"chi"   "[TopInfectors]"
+		"pl"   "[TopInfectors]"
+		"tr"   "[TopInfectors]"
+		"it"   "[TopInfectors]"
+		"ua"   "[TopInfectors]"
+		"zho"   "[TopInfectors]"
+		"cze"   "[TopInfectors]"
 	}
 	"Menu Title Infectors"
 	{
@@ -19,6 +25,12 @@
 		"de"    "TOP-INFIZIERER"
 		"pt"    "TOP INFECTADORES"
 		"chi"   "感染者排行"
+		"pl"   "TOP ZARAŻAJĄCYCH"
+		"tr"   "EN ÇOK BULAŞTIRANLAR"
+		"it"   "TOP INFETTORI"
+		"ua"   "ТОП ЗАРАЖУВАЧІВ"
+		"zho"   "感染者排行"
+		"cze"   "TOP INFIKÁTOŘI"
 	}
 	"Menu Title Nemesis"
 	{
@@ -29,6 +41,12 @@
 		"de"    "TOP-NEMESIS"
 		"pt"    "TOP NEMESIS"
 		"chi"   "复仇者排行"
+		"pl"   "TOP NEMESIS"
+		"tr"   "TOP NEMESIS"
+		"it"   "TOP NEMESIS"
+		"ua"   "ТОП НЕМЕЗИДА"
+		"zho"   "宿敵排行"
+		"cze"   "TOP NEMESIS"
 	}
 	"Infectors"
 	{
@@ -39,6 +57,12 @@
 		"de"    "Infizierer"
 		"pt"    "Infectadores"
 		"chi"   "感染者"
+		"pl"   "zarażający"
+		"tr"   "Bulaştıranlar"
+		"it"   "Infettori"
+		"ua"   "Зараджувачі"
+		"zho"   "感染者"
+		"cze"   "Infikátoři"
 	}
 	"Nemesis"
 	{
@@ -49,6 +73,12 @@
 		"de"    "Nemesis"
 		"pt"    "Nemesis"
 		"chi"   "复仇者"
+		"pl"   "Nemesis"
+		"tr"   "Nemesis"
+		"it"   "Nemesis"
+		"ua"   "Немезида"
+		"zho"   "宿敵"
+		"cze"   "Nemesis"
 	}
 	"Killed"
 	{
@@ -59,6 +89,12 @@
 		"de"    "Kills"
 		"pt"    "abates"
 		"chi"   "击杀"
+		"pl"   "zabitych"
+		"tr"   "öldürme"
+		"it"   "uccisioni"
+		"ua"   "вбито"
+		"zho"   "擊殺"
+		"cze"   "zabití"
 	}
 	"Infected"
 	{
@@ -69,6 +105,12 @@
 		"de"    "Infektionen"
 		"pt"    "infectados"
 		"chi"   "感染"
+		"pl"   "zarażonych"
+		"tr"   "bulaştırma"
+		"it"   "infettati"
+		"ua"   "заражено"
+		"zho"   "感染"
+		"cze"   "infikovaných"
 	}
 	"Skull Enabled"
 	{
@@ -79,6 +121,12 @@
 		"de"    "Du spawnst jetzt wieder mit einem Totenkopf"
 		"pt"    "Você voltará a nascer com uma caveira"
 		"chi"   "你将再次带着骷髅重生"
+		"pl"   "Znowu będziesz się odradzać z czaszką"
+		"tr"   "Artık tekrar kafatasıyla doğacaksınız"
+		"it"   "Tornerai a comparire con un teschio"
+		"ua"   "Тепер ви знову з'являтиметеся з черепом"
+		"zho"   "你將再次帶著骷髏頭重生"
+		"cze"   "Znovu se budete objevovat s lebkou"
 	}
 	"Skull Disabled"
 	{
@@ -89,6 +137,12 @@
 		"de"    "Du spawnst nicht mehr mit einem Totenkopf"
 		"pt"    "Você não nascerá mais com uma caveira"
 		"chi"   "你将不再带着骷髅重生"
+		"pl"   "Nie będziesz już odradzać się z czaszką"
+		"tr"   "Artık kafatasıyla doğmayacaksınız"
+		"it"   "Non comparirai più con un teschio"
+		"ua"   "Ви більше не з'являтиметеся з черепом"
+		"zho"   "你將不再帶著骷髏頭重生"
+		"cze"   "Již se nebudete objevovat s lebkou"
 	}
 	"Not ranked"
 	{
@@ -99,6 +153,12 @@
 		"de"	"Noch nicht platziert"
 		"pt"	"Ainda sem classificação"
 		"chi"	"暂未上榜"
+		"pl"	"Jeszcze nie sklasyfikowano"
+		"tr"	"Henüz sıralanmadı"
+		"it"	"Non ancora in classifica"
+		"ua"	"Ще не в рейтингу"
+		"zho"	"尚未上榜"
+		"cze"	"Zatím nezařazeno"
 	}
 	"TopInfector Position"
 	{
@@ -110,6 +170,12 @@
 		"de"	"{1} ist aktuell Top-Infizierer #{2} mit {3} {4}"
 		"pt"	"{1} é atualmente o Top infectador #{2} com {3} {4}"
 		"chi"	"{1} 目前位列感染者排行第 {2} 名（{3} {4}）"
+		"pl"	"{1} jest obecnie Top Zarażającym #{2} z wynikiem {3} {4}"
+		"tr"	"{1} şu anda {3} {4} ile #{2}. numaralı Top Bulaştıran"
+		"it"	"{1} è attualmente Top Infettore #{2} con {3} {4}"
+		"ua"	"{1} зараз Топ зараджувач #{2} з {3} {4}"
+		"zho"	"{1} 目前是感染者排行第 {2} 名，共 {3} {4}"
+		"cze"	"{1} je právě Top infikátor #{2} s {3} {4}"
 	}
 	"TopNemesis Position"
 	{
@@ -121,6 +187,12 @@
 		"de"	"{1} ist aktuell Top-Nemesis #{2} mit {3} {4}"
 		"pt"	"{1} é atualmente o Top Nemesis #{2} com {3} {4}"
 		"chi"	"{1} 目前位列复仇者排行第 {2} 名（{3} {4}）"
+		"pl"	"{1} jest obecnie Top Nemesis #{2} z wynikiem {3} {4}"
+		"tr"	"{1} şu anda {3} {4} ile #{2}. numaralı Top Nemesis"
+		"it"	"{1} è attualmente Top Nemesis #{2} con {3} {4}"
+		"ua"	"{1} зараз Топ Немезида #{2} з {3} {4}"
+		"zho"	"{1} 目前是宿敵排行第 {2} 名，共 {3} {4}"
+		"cze"	"{1} je právě Top Nemesis #{2} s {3} {4}"
 	}
 	"Reward Msg"
 	{
@@ -131,6 +203,12 @@
 		"de"	"Du hast Granaten als Belohnung erhalten."
 		"pt"	"Você recebeu granadas como recompensa."
 		"chi"	"你获得了手雷奖励。"
+		"pl"	"Otrzymałeś granaty w nagrodę."
+		"tr"	"Ödül olarak bombalar kazandınız."
+		"it"	"Hai ricevuto delle granate come ricompensa."
+		"ua"	"Ви отримали гранати як нагороду."
+		"zho"	"你獲得了手榴彈作為獎勵。"
+		"cze"	"Získali jste granáty jako odměnu."
 	}
 	"The top"
 	{
@@ -142,5 +220,11 @@
 		"de"    "Weil du letzte Runde Top-{1} warst!"
 		"pt"    "Porque você foi o Top {1} na última rodada!"
 		"chi"   "因为你在上一回合进入了{1}排行！"
+		"pl"   "Ponieważ byłeś w Top {1} w ostatniej rundzie!"
+		"tr"   "Çünkü geçen turda İlk {1} içindeydiniz!"
+		"it"   "Perché sei stato nella Top {1} nello scorso round!"
+		"ua"   "Бо ви були в Топ {1} минулого раунду!"
+		"zho"   "因為你在上一回合進入了前 {1} 名！"
+		"cze"   "Protože jste byli v minulém kole v Top {1}!"
 	}
 }
