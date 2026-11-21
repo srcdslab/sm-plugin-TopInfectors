@@ -264,18 +264,8 @@ public void Event_OnClientDeath(Event hEvent, const char[] sEvent, bool bDontBro
 {
 	int client = GetClientOfUserId(hEvent.GetInt("userid"));
 
-	for (int i = 1; i <= MaxClients; i++)
-	{
-		if (i != client)
-			continue;
-
-		if (g_iTopInfector[i] == 0 && !IsPlayerAlive(i))
-		{
-			RemoveHat(i);
-		}
-
-		break;
-	}
+	if (client > 0 && client <= MaxClients && g_iTopInfector[client] == 0 && !IsPlayerAlive(client))
+		RemoveHat(client);
 
 	if (g_bNemesis)
 	{
@@ -565,7 +555,8 @@ stock void RemoveHat(int client)
 			LogError("Blocked attempt to remove invalid entity %d (%s) for %L", iSkullEntity, sClassName, client);
 			return;
 		}
-			AcceptEntityInput(iSkullEntity, "Kill");
+
+		AcceptEntityInput(iSkullEntity, "Kill");
 		g_iSkullEntities[client] = INVALID_ENT_REFERENCE;
 	}
 }
