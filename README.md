@@ -4,7 +4,7 @@
 
 ### CSS
 ```
-sm_cvar sm_topdefenders_print_position "0.02 0.42"
+sm_cvar sm_topinfectors_print_position "0.02 0.42"
 ```
 
 ### CSGO
