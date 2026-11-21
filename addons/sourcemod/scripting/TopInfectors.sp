@@ -8,7 +8,6 @@
 
 #undef REQUIRE_PLUGIN
 #tryinclude <DynamicChannels>
-#tryinclude <nemesis>
 #define REQUIRE_PLUGIN
 
 #include "loghelper.inc"
@@ -731,10 +730,10 @@ public int Native_GetClientRank(Handle plugin, int numParams)
 	return rank;
 }
 
-#if defined _nemesis_included
+// Forward from the Nemesis plugin (srcdslab/sm-plugin-Nemesis, private): defined without its include,
+// which CI cannot fetch. A plugin receives a global forward by having a public function of that name
 public void Nemesis_OnConfigVerified(bool configExists)
 {
 	g_bNemesis = configExists;
 }
-#endif
 
