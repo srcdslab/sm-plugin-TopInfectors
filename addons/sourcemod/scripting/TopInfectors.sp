@@ -251,15 +251,13 @@ public Action Command_OnToggleStatus(int client, int args)
 // Purpose: Hooks
 //---------------------------------------
 
-public Action ZR_OnClientInfect(int &client, int &attacker, bool &motherInfect, bool &respawnOverride, bool &respawn)
+// Post hook: the pre hook (ZR_OnClientInfect) also runs for infections that another plugin then blocks
+public void ZR_OnClientInfected(int client, int attacker, bool motherInfect, bool respawnOverride, bool respawn)
 {
 	if (!IsValidZombie(attacker))
-	{
-		return Plugin_Continue;
-	}
+		return;
 
 	g_iInfectCount[attacker]++;
-	return Plugin_Continue;
 }
 
 public void Event_OnClientDeath(Event hEvent, const char[] sEvent, bool bDontBroadcast)
