@@ -51,6 +51,9 @@ jobs:
           cp -R deps/smlib/addons/sourcemod/scripting/include/* addons/sourcemod/scripting/include/
           git clone --depth=1 https://github.com/srcdslab/sm-plugin-DynamicChannels.git deps/dynamicchannels
           cp -R deps/dynamicchannels/scripting/include/* addons/sourcemod/scripting/include/
+          # Optional: without it the Nemesis_OnConfigVerified forward is not compiled and the Nemesis mode never turns on
+          git clone --depth=1 https://github.com/srcdslab/sm-plugin-Nemesis.git deps/nemesis
+          cp -R deps/nemesis/addons/sourcemod/scripting/include/* addons/sourcemod/scripting/include/
 
       - name: Build sourcemod plugin
         working-directory: addons/sourcemod/scripting
